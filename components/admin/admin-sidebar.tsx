@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   ShieldAlert,
   LayoutDashboard,
+  FileText,
   Users,
   Building2,
   Tags,
@@ -38,13 +39,19 @@ export function AdminSidebar({ userEmail, userName }: AdminSidebarProps) {
 
   const navItems = [
     {
-      title: "Admin Overview",
+      title: "Incident Reports",
+      href: "/admin/reports",
+      icon: FileText,
+      active: pathname.startsWith("/admin/reports"),
+    },
+    {
+      title: "Overview",
       href: "/admin",
       icon: LayoutDashboard,
       active: pathname === "/admin",
     },
     {
-      title: "User Management",
+      title: "Users",
       href: "/admin/users",
       icon: Users,
       active: pathname.startsWith("/admin/users"),
@@ -56,7 +63,7 @@ export function AdminSidebar({ userEmail, userName }: AdminSidebarProps) {
       active: pathname.startsWith("/admin/departments"),
     },
     {
-      title: "Incident Categories",
+      title: "Categories",
       href: "/admin/categories",
       icon: Tags,
       active: pathname.startsWith("/admin/categories"),

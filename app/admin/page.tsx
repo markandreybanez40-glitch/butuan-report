@@ -36,77 +36,87 @@ export default async function AdminDashboardPage() {
         {/* KPI Summary Cards */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Incidents */}
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Total Incidents
-              </CardTitle>
-              <FileText className="size-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stats.totalIncidents}</div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                All-time civic hazard reports
-              </p>
-            </CardContent>
-          </Card>
+          <Link href="/admin/reports" className="block group">
+            <Card className="border-border/70 shadow-2xs group-hover:border-purple-500/50 transition-colors h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-purple-600 transition-colors">
+                  Total Incidents
+                </CardTitle>
+                <FileText className="size-4 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">{stats.totalIncidents}</div>
+                <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center justify-between">
+                  <span>All-time reports</span>
+                  <span className="text-purple-600 font-medium">Manage &rarr;</span>
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Open / In-Progress */}
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Active Operations
-              </CardTitle>
-              <Clock className="size-4 text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                {stats.openIncidents}
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Pending triage or dispatched
-              </p>
-            </CardContent>
-          </Card>
+          <Link href="/admin/reports?status=submitted,under_review,assigned,in_progress" className="block group">
+            <Card className="border-border/70 shadow-2xs group-hover:border-amber-500/50 transition-colors h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-amber-600 transition-colors">
+                  Active Operations
+                </CardTitle>
+                <Clock className="size-4 text-amber-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {stats.openIncidents}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center justify-between">
+                  <span>Pending triage/dispatch</span>
+                  <span className="text-amber-600 font-medium">Review &rarr;</span>
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Resolved */}
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Resolved & Closed
-              </CardTitle>
-              <CheckCircle2 className="size-4 text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                {stats.resolvedIncidents}
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Completed incident resolutions
-              </p>
-            </CardContent>
-          </Card>
+          <Link href="/admin/reports?status=resolved,closed" className="block group">
+            <Card className="border-border/70 shadow-2xs group-hover:border-emerald-500/50 transition-colors h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-emerald-600 transition-colors">
+                  Resolved & Closed
+                </CardTitle>
+                <CheckCircle2 className="size-4 text-emerald-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                  {stats.resolvedIncidents}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Completed resolutions
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
 
           {/* Active Staff / Users */}
-          <Card className="border-border/70 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground">
-                Staff & Citizens
-              </CardTitle>
-              <Users className="size-4 text-blue-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {stats.totalStaff}{" "}
-                <span className="text-xs font-normal text-muted-foreground">
-                  / {stats.totalUsers} total
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Responders, dispatchers, & admins
-              </p>
-            </CardContent>
-          </Card>
+          <Link href="/admin/users" className="block group">
+            <Card className="border-border/70 shadow-2xs group-hover:border-blue-500/50 transition-colors h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-blue-600 transition-colors">
+                  Staff & Citizens
+                </CardTitle>
+                <Users className="size-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">
+                  {stats.totalStaff}{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    / {stats.totalUsers} total
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Responders & Admins
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         </section>
 
         {/* Administration Hub Quick Navigation */}
