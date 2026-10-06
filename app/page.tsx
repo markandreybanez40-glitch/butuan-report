@@ -551,6 +551,11 @@ export default function HomePage() {
                     Incident Categories
                   </Link>
                 </li>
+                <li>
+                  <Link href="/admin/sign-in" className="hover:text-foreground transition-colors font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                    Admin Portal Sign In &rarr;
+                  </Link>
+                </li>
               </ul>
             </div>
 

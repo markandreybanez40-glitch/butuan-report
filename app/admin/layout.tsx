@@ -17,7 +17,7 @@ export default async function AdminLayout({
   const user = await currentUser();
 
   if (!user) {
-    redirect("/sign-in?redirect_url=/admin");
+    redirect("/admin/sign-in?redirect_url=/admin");
   }
 
   const profile = await getCurrentProfile();
