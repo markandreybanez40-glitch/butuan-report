@@ -71,8 +71,27 @@ export default function SignUpPage() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center text-xs text-muted-foreground max-w-md mx-auto">
-        City Government of Butuan &bull; Public Safety Reporting System
+      <footer className="text-center text-xs text-muted-foreground max-w-lg mx-auto space-y-2 py-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link href="/privacy" className="hover:text-foreground transition-colors">
+            Privacy Policy
+          </Link>
+          <span>&bull;</span>
+          <Link href="/terms" className="hover:text-foreground transition-colors">
+            Terms of Service
+          </Link>
+          <span>&bull;</span>
+          <Link href="/data-collection" className="hover:text-foreground transition-colors">
+            Data Collection
+          </Link>
+          <span>&bull;</span>
+          <Link href="/contact" className="hover:text-foreground transition-colors">
+            Contact
+          </Link>
+        </div>
+        <p className="text-[11px] text-muted-foreground/80">
+          City Government of Butuan &bull; Public Safety Reporting System
+        </p>
       </footer>
     </div>
   );

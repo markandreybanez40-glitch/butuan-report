@@ -570,17 +570,17 @@ export default function HomePage() {
                 </li>
                 <li>
                   <Link href="/terms" className="hover:text-foreground transition-colors">
-                    Terms of Use
+                    Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="hover:text-foreground transition-colors">
-                    Data Collection Policy
+                  <Link href="/data-collection" className="hover:text-foreground transition-colors">
+                    Data Collection Transparency
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="hover:text-foreground transition-colors">
-                    Community Guidelines
+                  <Link href="/contact" className="hover:text-foreground transition-colors">
+                    Contact & Technical Support
                   </Link>
                 </li>
               </ul>
@@ -591,16 +591,18 @@ export default function HomePage() {
               <h4 className="text-sm font-semibold text-foreground">Contact & Emergency</h4>
               <ul className="mt-3 space-y-2 text-xs text-muted-foreground">
                 <li>
-                  <span className="font-semibold text-foreground">National Hotline:</span> 911
+                  <span className="font-semibold text-foreground">Emergency Hotline:</span> 911
                 </li>
                 <li>
-                  <span className="font-semibold text-foreground">CDRRMO Landline:</span> (085) 341-1111
+                  <span className="font-semibold text-foreground">CDRRMO Hotline:</span> (085) 341-1111
                 </li>
                 <li>
-                  <span className="font-semibold text-foreground">CDRRMO Mobile:</span> 0919-065-0105
+                  <Link href="/contact" className="hover:text-foreground transition-colors text-primary font-medium">
+                    View All Support Contacts &rarr;
+                  </Link>
                 </li>
                 <li>
-                  <span className="font-semibold text-foreground">Email Support:</span>{" "}
+                  <span className="font-semibold text-foreground">Support Email:</span>{" "}
                   <span className="font-mono">support@butuanreport.gov.ph</span>
                 </li>
               </ul>
