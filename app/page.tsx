@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ShieldCheck,
   ShieldAlert,
   MapPin,
   Clock,
@@ -17,109 +18,124 @@ import {
   AlertTriangle,
   Send,
   Sparkles,
+  UserCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LandingHeader } from "@/components/landing-header";
 import { AuthCta } from "@/components/auth-cta";
+import { getActiveCategories } from "@/lib/data/categories";
 
-export default function HomePage() {
-  const categories = [
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  // Fetch real categories from Supabase with safe fallback
+  const dbCategories = await getActiveCategories().catch(() => []);
+
+  const defaultCategories = [
     {
-      title: "Road Issues",
+      id: "road-damage",
+      name: "Road Damage & Potholes",
+      description: "Potholes, broken pavement, damaged bridge joints, open manholes, and traffic obstructions.",
       icon: Construction,
-      description: "Potholes, broken asphalt, damaged bridges, open manholes, and street obstructions.",
-      examples: "Potholes · Damaged curbs · Missing manhole covers",
-      badge: "Infrastructure",
+      scope: "City Engineering Office (CEO)",
     },
     {
-      title: "Flooding",
+      id: "flooding",
+      name: "Flooding & Drainage",
+      description: "Clogged canals, flash floods, drainage overflow, and stagnant storm runoff.",
       icon: Waves,
-      description: "Clogged stormwater drains, canal overflow, flash floods, and prolonged standing water.",
-      examples: "Clogged canals · Street runoff · Riverbank swelling",
-      badge: "Disaster Risk",
+      scope: "CDRRMO & City Engineering",
     },
     {
-      title: "Public Safety",
-      icon: ShieldAlert,
-      description: "Fallen trees blocking rights-of-way, slope erosion, landslides, and structural hazards.",
-      examples: "Uprooted trees · Soil erosion · Unstable walls",
-      badge: "Urgent",
-    },
-    {
-      title: "Environmental",
+      id: "structural",
+      name: "Fallen Trees & Physical Hazards",
+      description: "Uprooted trees blocking roads, soil erosion, collapsed walls, and landslide hazards.",
       icon: TreePine,
-      description: "Illegal garbage dumpsites, waterway pollution, hazardous waste, and unauthorized burning.",
-      examples: "Illegal dumping · Creek waste · Industrial runoff",
-      badge: "Environment",
+      scope: "City ENRO & CDRRMO",
     },
     {
-      title: "Utilities",
+      id: "utilities",
+      name: "Utilities & Streetlights",
+      description: "Malfunctioning streetlights, exposed power lines, leaning utility poles, and burst water pipes.",
       icon: Zap,
-      description: "Downed electric cables, leaning power poles, burst water mains, and malfunctioning streetlights.",
-      examples: "Exposed wires · Broken water pipes · Dark intersections",
-      badge: "Utilities",
+      scope: "General Services & Utility Providers",
     },
     {
-      title: "Other",
+      id: "sanitation",
+      name: "Waste & Sanitation",
+      description: "Uncollected garbage piles, illegal creek dumping, hazardous runoff, and sewer leaks.",
+      icon: ShieldAlert,
+      scope: "City Environment & Health Office",
+    },
+    {
+      id: "other",
+      name: "Other Community Hazards",
+      description: "Damaged public facilities, municipal park issues, and general civic concerns.",
       icon: HelpCircle,
-      description: "Damaged municipal parks, civic facilities, sanitation risks, or unclassified community hazards.",
-      examples: "Broken public facilities · Perimeter fences · Sanitation",
-      badge: "Civic Concern",
+      scope: "Municipal Operations Desk",
     },
   ];
+
+  // Map real database categories if available, otherwise use standardized set
+  const displayCategories = dbCategories.length > 0
+    ? dbCategories.map((c, i) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || "Report community concerns in this category for municipal review.",
+        icon: [Construction, Waves, TreePine, Zap, ShieldAlert, HelpCircle][i % 6],
+        scope: "Municipal Dispatch Desk",
+      }))
+    : defaultCategories;
 
   const steps = [
     {
       number: "01",
       title: "Report",
+      subtitle: "Submit in 2 minutes",
       icon: Send,
-      description: "Pinpoint your barangay and street, describe the issue clearly, and attach photo evidence from your phone or device.",
+      description: "Select your barangay, describe the hazard clearly, and upload optional photos from your mobile device or computer.",
     },
     {
       number: "02",
       title: "Track",
+      subtitle: "Live transparent milestones",
       icon: Eye,
-      description: "Receive a unique tracking number (e.g., BTN-20261002-0042) to monitor milestone progress from review to dispatch.",
+      description: "Receive a permanent reference number to follow triage, departmental routing, and official milestone updates in real time.",
     },
     {
       number: "03",
       title: "Respond",
+      subtitle: "Coordinated city action",
       icon: Clock,
-      description: "City dispatchers triage your report and coordinate with appropriate municipal engineering, emergency, or utility teams.",
-    },
-    {
-      number: "04",
-      title: "Safer Community",
-      icon: CheckCircle2,
-      description: "Verified on-site action is documented with timestamped progress updates until the civic concern is fully resolved.",
+      description: "Municipal dispatchers assign responsible field teams (CDRRMO, CEO, City ENRO) who inspect and resolve the reported hazard.",
     },
   ];
 
   const trustValues = [
     {
-      title: "Direct Municipal Routing",
+      title: "Direct Municipal Dispatch",
       icon: Building2,
       description:
-        "Every report is routed directly to the designated department — CDRRMO, City Engineering Office, City ENRO, or Traffic Management.",
+        "Every submission is placed in the official municipal triage queue and routed to responsible departments.",
     },
     {
-      title: "Transparent Milestones",
+      title: "Transparent Progress Timeline",
       icon: FileCheck2,
       description:
-        "No black box. Residents receive real-time notifications as their report transitions from Submitted to Under Review, Assigned, and Resolved.",
+        "Residents receive notifications as reports advance from Submitted to Under Review, Assigned, and Resolved.",
     },
     {
-      title: "Secure Identity & Integrity",
+      title: "Strict Identity Protection",
       icon: Lock,
       description:
-        "Clerk-authenticated citizen accounts protect against spam while keeping reporter contact information private and accessible solely for verification.",
+        "Personal contact data is shielded and accessible solely to authorized dispatchers for verification. Public maps are anonymized.",
     },
     {
-      title: "Covering All 86 Barangays",
+      title: "Citywide Coverage",
       icon: MapPin,
       description:
-        "From urban business districts along Montilla Boulevard to riverbank communities and rural barangays across Butuan City.",
+        "Active across all 86 barangays of Butuan City, connecting neighborhood concerns directly to city services.",
     },
   ];
 
@@ -131,18 +147,18 @@ export default function HomePage() {
       {/* Emergency Service Disclaimer Notice */}
       <aside
         aria-label="Emergency Service Notice"
-        className="border-b border-destructive/20 bg-destructive/10 px-4 py-3 text-destructive dark:bg-destructive/15 dark:text-red-300"
+        className="border-b border-destructive/20 bg-destructive/10 px-4 py-2.5 text-destructive dark:bg-destructive/15 dark:text-red-300"
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 text-xs sm:text-sm">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <AlertTriangle className="size-4 shrink-0 text-destructive" />
             <span>
-              <strong>Emergency Notice:</strong> This platform is for non-immediate civic and infrastructure reporting. In life-threatening emergencies, call national <strong>911</strong> or Butuan CDRRMO at <strong>(085) 341-1111</strong> immediately.
+              <strong>Emergency Notice:</strong> This platform is for community incident reporting and does <strong>not</strong> replace emergency services. For immediate life threats, fires, or medical crises, call <strong>911</strong> or CDRRMO Hotline at <strong>(085) 341-1111</strong>.
             </span>
           </div>
           <div className="hidden lg:flex items-center gap-2 font-mono text-xs whitespace-nowrap">
             <PhoneCall className="size-3.5" />
-            <span>CDRRMO Hotline: 0919-065-0105</span>
+            <span>CDRRMO Mobile: 0919-065-0105</span>
           </div>
         </div>
       </aside>
@@ -171,9 +187,9 @@ export default function HomePage() {
               {/* Civic Tagline Badge */}
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3.5 py-1 text-xs font-medium text-foreground/80 shadow-xs backdrop-blur-sm">
                 <Sparkles className="size-3.5 text-primary" />
-                <span>Butuan City Civic Engagement Portal</span>
+                <span>Civic Hazard Reporting Portal</span>
                 <span className="text-muted-foreground/60">•</span>
-                <span className="text-muted-foreground">Official Platform</span>
+                <span className="text-muted-foreground">Butuan City</span>
               </div>
 
               {/* Main Headline */}
@@ -185,8 +201,8 @@ export default function HomePage() {
               </h1>
 
               {/* Clear description */}
-              <p className="mt-6 text-lg leading-relaxed text-muted-foreground sm:text-xl">
-                A dedicated community portal for residents of Butuan City to report public infrastructure issues, drainage hazards, utility breakdowns, and road concerns — with transparent status tracking directly from city responders.
+              <p className="mt-6 text-base leading-relaxed text-muted-foreground sm:text-lg">
+                An open civic platform connecting residents of Butuan City directly to municipal response units. Report road hazards, flooding, fallen trees, and community concerns with transparent real-time status tracking.
               </p>
 
               {/* Primary & Secondary Call to Actions */}
@@ -195,62 +211,24 @@ export default function HomePage() {
               </div>
 
               {/* Trust Metric Highlights */}
-              <div className="mt-14 grid grid-cols-2 gap-4 border-t border-border/60 pt-8 sm:grid-cols-4 sm:gap-6">
+              <div className="mt-14 grid grid-cols-2 gap-4 border-t border-border/60 pt-8 sm:grid-cols-4 sm:gap-6 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-foreground">86</div>
-                  <div className="text-xs text-muted-foreground">Barangays Connected</div>
+                  <div className="text-2xl font-extrabold text-foreground">86</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Barangays Covered</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-foreground">6+</div>
-                  <div className="text-xs text-muted-foreground">City Departments</div>
+                  <div className="text-2xl font-extrabold text-foreground">100%</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Public Transparency</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-foreground">100%</div>
-                  <div className="text-xs text-muted-foreground">Transparent Tracking</div>
+                  <div className="text-2xl font-extrabold text-foreground">RLS</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Privacy Safeguards</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-foreground">24/7</div>
-                  <div className="text-xs text-muted-foreground">Digital Ingestion</div>
+                  <div className="text-2xl font-extrabold text-foreground">24/7</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Queue Intake</div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ==============================================================================
-            TRUST & VALUE SECTION (#about)
-            ============================================================================== */}
-        <section id="about" className="py-20 sm:py-24 bg-muted/30 border-b border-border/40">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-2xl text-center">
-              <Badge variant="outline" className="mb-3">
-                Civic Accountability
-              </Badge>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                Built to Bridge Citizens and City Hall
-              </h2>
-              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-                Butuan Report replaces fragmented social media complaints with structured, verifiable reports that city departments can immediately prioritize and action.
-              </p>
-            </div>
-
-            <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {trustValues.map((val) => {
-                const IconComponent = val.icon;
-                return (
-                  <Card key={val.title} className="border-border/60 bg-card/70 backdrop-blur-xs transition-shadow hover:shadow-md">
-                    <CardHeader className="pb-3">
-                      <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <IconComponent className="size-5" />
-                      </div>
-                      <CardTitle className="text-lg font-semibold">{val.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm leading-normal text-muted-foreground">{val.description}</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
             </div>
           </div>
         </section>
@@ -262,40 +240,38 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <Badge variant="outline" className="mb-3">
-                Simple 4-Step Process
+                Simple 3-Step Process
               </Badge>
               <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 How Butuan Report Works
               </h2>
-              <div className="mt-3 inline-flex flex-wrap items-center justify-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
-                <span>Report</span>
-                <span className="text-primary/40">→</span>
-                <span>Track</span>
-                <span className="text-primary/40">→</span>
-                <span>Respond</span>
-                <span className="text-primary/40">→</span>
-                <span>Safer Community</span>
-              </div>
-              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-                From initial incident discovery to on-site resolution, our streamlined workflow keeps you informed at every milestone.
+              <p className="mt-4 text-sm sm:text-base text-muted-foreground">
+                From hazard submission to verified field resolution, every step is streamlined for citizen convenience and administrative accountability.
               </p>
             </div>
 
-            <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {steps.map((st) => {
-                const IconComponent = st.icon;
+            <div className="mt-14 grid gap-8 md:grid-cols-3">
+              {steps.map((step) => {
+                const Icon = step.icon;
                 return (
-                  <div key={st.number} className="relative flex flex-col items-start p-6 rounded-2xl border border-border/50 bg-card">
-                    <div className="flex w-full items-center justify-between pb-4">
-                      <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
-                        <IconComponent className="size-5" />
+                  <div
+                    key={step.number}
+                    className="relative flex flex-col rounded-2xl border border-border/70 bg-card p-6 shadow-xs transition-all hover:border-primary/50 hover:shadow-sm"
+                  >
+                    <div className="flex items-center justify-between pb-4">
+                      <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold">
+                        <Icon className="size-5" />
                       </div>
-                      <span className="font-mono text-xs font-bold text-muted-foreground tracking-wider uppercase">
-                        Step {st.number}
+                      <span className="font-mono text-2xl font-black text-muted-foreground/40">
+                        {step.number}
                       </span>
                     </div>
-                    <h3 className="mt-2 text-xl font-bold text-foreground">{st.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{st.description}</p>
+
+                    <h3 className="text-lg font-bold text-foreground">{step.title}</h3>
+                    <p className="text-xs font-semibold text-primary mt-0.5">{step.subtitle}</p>
+                    <p className="mt-3 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                      {step.description}
+                    </p>
                   </div>
                 );
               })}
@@ -304,7 +280,7 @@ export default function HomePage() {
         </section>
 
         {/* ==============================================================================
-            REPORT CATEGORIES SECTION (#categories)
+            INCIDENT CATEGORIES SECTION (#categories)
             ============================================================================== */}
         <section id="categories" className="py-20 sm:py-24 bg-muted/20 border-b border-border/40">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -315,33 +291,32 @@ export default function HomePage() {
               <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 Reportable Incident Categories
               </h2>
-              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-                Select from clear civic hazard categories to ensure your submission reaches the proper specialized operational department.
+              <p className="mt-4 text-sm sm:text-base text-muted-foreground">
+                Select from clear hazard categories so your report is automatically routed to the right operational department.
               </p>
             </div>
 
             <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {categories.map((cat) => {
+              {displayCategories.map((cat) => {
                 const IconComponent = cat.icon;
                 return (
-                  <Card key={cat.title} className="flex flex-col justify-between border-border/60 transition-all hover:border-primary/40 hover:shadow-sm">
+                  <Card key={cat.id} className="flex flex-col justify-between border-border/60 transition-all hover:border-primary/40 hover:shadow-xs">
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                           <IconComponent className="size-5" />
                         </div>
                         <Badge variant="secondary" className="text-xs font-normal">
-                          {cat.badge}
+                          {cat.scope}
                         </Badge>
                       </div>
-                      <CardTitle className="pt-3 text-lg font-semibold text-foreground">{cat.title}</CardTitle>
-                      <CardDescription className="text-sm leading-normal">{cat.description}</CardDescription>
+                      <CardTitle className="pt-3 text-base sm:text-lg font-semibold text-foreground">
+                        {cat.name}
+                      </CardTitle>
+                      <CardDescription className="text-xs sm:text-sm leading-normal">
+                        {cat.description}
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="rounded-lg bg-muted/60 p-2.5 text-xs text-muted-foreground">
-                        <span className="font-semibold text-foreground/80">Examples:</span> {cat.examples}
-                      </div>
-                    </CardContent>
                   </Card>
                 );
               })}
@@ -350,131 +325,121 @@ export default function HomePage() {
         </section>
 
         {/* ==============================================================================
-            PRIVACY & DATA HANDLING SECTION (#privacy)
+            WORKFLOW & ROLE COLLABORATION SECTION (#about)
             ============================================================================== */}
-        <section id="privacy" className="py-20 sm:py-24 border-b border-border/40">
+        <section id="about" className="py-20 sm:py-24 border-b border-border/40">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-              <div>
-                <Badge variant="outline" className="mb-3">
-                  Data Governance & Security
-                </Badge>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                  Your Privacy is Protected by Design
-                </h2>
-                <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                  Civic incident reporting requires authentic citizen engagement while rigorously safeguarding personal information. Butuan Report is engineered around strict privacy principles:
-                </p>
+            <div className="mx-auto max-w-2xl text-center mb-14">
+              <Badge variant="outline" className="mb-3">
+                Platform Architecture
+              </Badge>
+              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Citizen Reporting Meets City Operations
+              </h2>
+              <p className="mt-4 text-sm sm:text-base text-muted-foreground">
+                A unified workflow connecting residents with municipal administrators and frontline responders.
+              </p>
+            </div>
 
-                <ul className="mt-6 space-y-4 text-sm text-foreground/90">
-                  <li className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <CheckCircle2 className="size-3.5" />
-                    </div>
-                    <span>
-                      <strong>Role-Based Access Control:</strong> Only authorized municipal dispatchers and assigned responders can view reporter contact details for verification purposes.
-                    </span>
+            <div className="grid gap-8 md:grid-cols-2">
+              {/* Resident Experience Card */}
+              <div className="rounded-2xl border border-border/80 bg-card p-6 sm:p-8 space-y-4 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <UserCheck className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">Resident Portal</h3>
+                    <p className="text-xs text-muted-foreground">Empowering citizen engagement</p>
+                  </div>
+                </div>
+                <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary shrink-0 mt-0.5" />
+                    <span>Submit reports with photos, GPS coordinates, and barangay references.</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <CheckCircle2 className="size-3.5" />
-                    </div>
-                    <span>
-                      <strong>Private Evidence Storage:</strong> Uploaded photo evidence is stored in private, access-controlled buckets restricted strictly to the reporter and active responders.
-                    </span>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary shrink-0 mt-0.5" />
+                    <span>Track progress milestones in real time on your personal dashboard.</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <CheckCircle2 className="size-3.5" />
-                    </div>
-                    <span>
-                      <strong>Segregated Internal Notes:</strong> Sensitive municipal coordination discussions are kept in protected internal channels; residents only receive public progress milestones.
-                    </span>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary shrink-0 mt-0.5" />
+                    <span>Explore the public incident map to stay informed on nearby community hazards.</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <CheckCircle2 className="size-3.5" />
-                    </div>
-                    <span>
-                      <strong>Immutable Audit Logging:</strong> Municipal staff and administrative actions are logged in tamper-evident audit records to ensure integrity and accountability.
-                    </span>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-primary shrink-0 mt-0.5" />
+                    <span>Receive instant alerts when city responders update your report.</span>
                   </li>
                 </ul>
               </div>
 
-              {/* Data Policy Card */}
-              <div className="rounded-2xl border border-border bg-card p-8 shadow-xs">
-                <div className="flex items-center gap-3 border-b border-border/60 pb-4">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Lock className="size-5" />
+              {/* Administrative & Responder Experience Card */}
+              <div className="rounded-2xl border border-border/80 bg-card p-6 sm:p-8 space-y-4 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    <Building2 className="size-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-foreground">Data Privacy Commitment</h3>
-                    <p className="text-xs text-muted-foreground">Republic Act 10173 (Data Privacy Act of 2012)</p>
+                    <h3 className="text-lg font-bold text-foreground">Admin & Response Command</h3>
+                    <p className="text-xs text-muted-foreground">Coordinated municipal triage</p>
                   </div>
                 </div>
-
-                <div className="mt-6 space-y-4 text-xs leading-relaxed text-muted-foreground">
-                  <p>
-                    The City Government of Butuan collects user identity, contact details, and location coordinates solely for the operational purpose of investigating, validating, and resolving reported civic concerns.
-                  </p>
-                  <p>
-                    Under no circumstance is resident data commercialized, rented, or shared with third-party advertising entities. Information is retained in accordance with Philippine municipal recordkeeping policies and securely archived once incidents are permanently closed.
-                  </p>
-                  <div className="rounded-lg border border-border/80 bg-muted/40 p-3">
-                    <span className="font-semibold text-foreground">Inquiries:</span> For privacy concerns or data subject requests, citizens may contact the Butuan City Data Protection Officer via{" "}
-                    <span className="font-mono text-foreground underline">dataprivacy@butuan.gov.ph</span>.
-                  </div>
-                </div>
+                <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <span>Triage citizen queue by urgency, severity, category, and barangay.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <span>Dispatch assignments to specialized departments and lead responders.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <span>Publish public milestone notices while keeping internal notes confidential.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="size-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <span>Maintain immutable audit logs and master department/category controls.</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
         </section>
 
         {/* ==============================================================================
-            TERMS & RESPONSIBLE REPORTING SECTION (#terms)
+            PRIVACY & TRUST SECTION
             ============================================================================== */}
-        <section id="terms" className="py-20 sm:py-24 bg-muted/20 border-b border-border/40">
+        <section className="py-20 sm:py-24 bg-muted/20 border-b border-border/40">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-2xl text-center">
               <Badge variant="outline" className="mb-3">
-                Community Guidelines
+                Security & Governance
               </Badge>
               <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                Terms of Responsible Civic Reporting
+                Privacy Protected by Design
               </h2>
-              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-                To ensure municipal resources are efficiently deployed to legitimate hazards, all users agree to adhere to community standards:
+              <p className="mt-4 text-sm sm:text-base text-muted-foreground">
+                We handle citizen data with the highest standards of confidentiality and security under Republic Act No. 10173 (Data Privacy Act of 2012).
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
-              <Card className="border-border/60 bg-card">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold">1. Genuine Concerns Only</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  Reports must represent real, observable community issues within the territorial jurisdiction of Butuan City. Filing false, frivolous, or fraudulent claims harms community safety and violates municipal regulations.
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/60 bg-card">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold">2. Accurate Location & Proof</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  Provide exact barangay names, street references, and nearby landmarks whenever possible. Upload recent, unedited photos of the hazard to enable swift assessment by dispatchers.
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/60 bg-card">
-                <CardHeader>
-                  <CardTitle className="text-base font-semibold">3. Respectful Communication</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  Interactions with city responders and municipal teams must remain constructive and professional. Content containing defamation, profanity, harassment, or political propaganda will be rejected.
-                </CardContent>
-              </Card>
+            <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {trustValues.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <div
+                    key={t.title}
+                    className="rounded-2xl border border-border/70 bg-card p-5 space-y-2 shadow-2xs"
+                  >
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="size-4" />
+                    </div>
+                    <h3 className="text-sm font-bold text-foreground">{t.title}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t.description}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -484,15 +449,15 @@ export default function HomePage() {
             ============================================================================== */}
         <section className="relative overflow-hidden py-20 sm:py-28">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="relative rounded-3xl border border-primary/20 bg-gradient-to-b from-primary/10 via-card to-card p-10 sm:p-16 text-center shadow-lg">
+            <div className="relative rounded-3xl border border-primary/20 bg-gradient-to-b from-primary/10 via-card to-card p-10 sm:p-16 text-center shadow-md">
               <Badge variant="secondary" className="mb-4">
                 Citizen Action
               </Badge>
               <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-                Your report matters.
+                Your report makes Butuan safer.
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg">
-                Every alert citizen who spots a road hazard, a blocked floodway, or a dangerous utility pole helps prevent accidents before they happen. Take 2 minutes to submit an incident today.
+              <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground sm:text-base leading-relaxed">
+                Spot a dangerous pothole, clogged stormwater drainage, or fallen utility pole? Submit a quick report today and track its resolution step-by-step.
               </p>
 
               <div className="mt-8">
@@ -513,7 +478,7 @@ export default function HomePage() {
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center gap-2.5">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                  <ShieldAlert className="size-4" />
+                  <ShieldCheck className="size-4" />
                 </div>
                 <span className="font-bold text-base tracking-tight text-foreground">
                   Butuan Report
@@ -537,11 +502,6 @@ export default function HomePage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="#about" className="hover:text-foreground transition-colors">
-                    About the Platform
-                  </Link>
-                </li>
-                <li>
                   <Link href="#how-it-works" className="hover:text-foreground transition-colors">
                     How It Works
                   </Link>
@@ -552,7 +512,12 @@ export default function HomePage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/admin/sign-in" className="hover:text-foreground transition-colors font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                  <Link href="/sign-in" className="hover:text-foreground transition-colors font-medium text-primary">
+                    Resident Sign In
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/admin/sign-in" className="hover:text-foreground transition-colors font-medium text-purple-600 dark:text-purple-400">
                     Admin Portal Sign In &rarr;
                   </Link>
                 </li>
@@ -580,7 +545,7 @@ export default function HomePage() {
                 </li>
                 <li>
                   <Link href="/contact" className="hover:text-foreground transition-colors">
-                    Contact & Technical Support
+                    Contact & Support
                   </Link>
                 </li>
               </ul>
@@ -597,13 +562,12 @@ export default function HomePage() {
                   <span className="font-semibold text-foreground">CDRRMO Hotline:</span> (085) 341-1111
                 </li>
                 <li>
+                  <span className="font-semibold text-foreground">CDRRMO Mobile:</span> 0919-065-0105
+                </li>
+                <li>
                   <Link href="/contact" className="hover:text-foreground transition-colors text-primary font-medium">
                     View All Support Contacts &rarr;
                   </Link>
-                </li>
-                <li>
-                  <span className="font-semibold text-foreground">Support Email:</span>{" "}
-                  <span className="font-mono">support@butuanreport.gov.ph</span>
                 </li>
               </ul>
             </div>
