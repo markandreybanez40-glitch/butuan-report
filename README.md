@@ -4,7 +4,7 @@
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ System Architecture & Technology Stack
 
 - **Framework**: Next.js 16 (App Router with Turbopack) & React 19
 - **Authentication**: Clerk Authentication (`@clerk/nextjs`)
@@ -14,14 +14,64 @@
 
 ---
 
-## 👥 User Roles & Permissions
+## 👥 User Roles & Permissions Matrix
 
-| Role | Access Level | Permitted Actions |
+| Role | Portal Route | Access Scope & Permitted Actions |
 |---|---|---|
 | **Resident** (`resident`) | `/dashboard` | File incident reports with photos/GPS, track personal tickets, receive real-time notifications, view personal incident map. |
 | **Responder** (`responder`) | `/staff` | View assigned field tickets, post public updates and internal notes, mark incidents as in progress or resolved. |
 | **Dispatcher** (`dispatcher`) | `/staff` | City-wide incident triage, assign tickets to municipal departments or specific responders, update status levels. |
 | **Admin** (`admin`) | `/admin` & `/staff` | Manage user role authorizations (`/admin/users`), configure departments (`/admin/departments`), manage hazard categories (`/admin/categories`), inspect immutable security audit logs (`/admin/audit-logs`). |
+
+---
+
+## 📖 Complete User & Operator Guide
+
+### 1. Resident Workflow
+1. **Sign Up / Sign In**: Register using email/password authentication on `/sign-in` or `/sign-up`. Account profile is automatically synchronized with the database.
+2. **Submit Incident (`/dashboard/new`)**:
+   - Provide Title, Detailed Description, Category, Estimated Severity, and Barangay location.
+   - Use the **Interactive Map Picker** to drop a pin or click **"Use My Location"** for GPS auto-detection.
+   - Upload up to 5 photo or document evidence files (JPG, PNG, WebP, HEIC, GIF, PDF up to 10MB each).
+3. **Track Incident Reports (`/dashboard/reports`)**:
+   - View all filed reports with status badges (`Submitted`, `Under Review`, `Assigned`, `In Progress`, `Resolved`, `Closed`).
+   - Filter and search by keyword or status.
+4. **Inspect Progress Timeline (`/dashboard/reports/[id]`)**:
+   - View milestone dates, assigned department status, and public response notes posted by municipal crews.
+5. **Interactive Resident Map (`/dashboard/map`)**:
+   - View spatial clusters of personal reports across Butuan City.
+6. **Notifications (`/dashboard/notifications`)**:
+   - Receive real-time system alerts on ticket assignments and status transitions.
+
+---
+
+### 2. Municipal Staff & Dispatcher Workflow
+1. **Queue Inspection (`/staff` & `/staff/incidents`)**:
+   - Dispatchers review incoming unassigned reports across all 86 barangays.
+   - Responders view tickets assigned specifically to their team.
+2. **Incident Assignment**:
+   - Assign tickets to target departments (e.g. City Engineering Office, CDRRMO, City ENRO) or designated field responders.
+   - Status automatically advances to `Assigned`.
+3. **Public Updates & Internal Notes**:
+   - Post **Public Updates** visible to the reporting citizen on their timeline.
+   - Post **Internal Notes** (`visibility = 'internal'`) restricted strictly to municipal staff for departmental coordination.
+4. **Resolution & Archival**:
+   - Mark incidents as `In Progress`, `Resolved` (records resolution timestamp), or `Closed`.
+5. **Municipal Operations Map (`/staff/map`)**:
+   - Live GIS map with multi-filter controls (Status, Severity, Category, Barangay).
+
+---
+
+### 3. Administrator Workflow
+1. **User Role Authorization (`/admin/users`)**:
+   - Inspect registered accounts and promote/demote roles (`resident`, `responder`, `dispatcher`, `admin`).
+   - Self-demotion protection prevents administrators from accidentally revoking their own access.
+2. **Department Management (`/admin/departments`)**:
+   - Add new municipal divisions, edit descriptions, and toggle active status.
+3. **Category Management (`/admin/categories`)**:
+   - Configure public hazard reporting categories and classification rules.
+4. **Security Audit Trail (`/admin/audit-logs`)**:
+   - Inspect immutable, append-only security logs capturing user role modifications, department changes, and master data updates.
 
 ---
 
@@ -63,6 +113,12 @@ Execute the SQL migration scripts in order on your Supabase PostgreSQL instance:
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 4. Build & Verification
+```bash
+npm run lint   # Run ESLint validation
+npm run build  # Test production build bundle
+```
 
 ---
 
