@@ -111,6 +111,7 @@ Execute the SQL migration scripts in order on your Supabase PostgreSQL instance:
 2. `supabase/migrations/20261002000001_security_hardening.sql` (RLS policies and security routines)
 3. `supabase/migrations/20261002000002_storage_setup.sql` (Storage bucket initialization)
 4. `supabase/migrations/20261002000003_audit_and_storage_hardening.sql` (Private storage checks and audit log immutability)
+5. `supabase/migrations/20261002000004_fix_function_permissions.sql` (Function execute grants for anonymous and authenticated callers)
 
 ### 3. Start Development Server
 ```bash

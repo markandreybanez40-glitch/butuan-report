@@ -40,6 +40,7 @@ Configure the following environment variables in your deployment hosting platfor
    - `20261002000001_security_hardening.sql` (Applies Clerk RLS policies)
    - `20261002000002_storage_setup.sql` (Sets up the storage bucket)
    - `20261002000003_audit_and_storage_hardening.sql` (Applies bucket constraints, MIME validation, and immutable audit logs)
+   - `20261002000004_fix_function_permissions.sql` (Applies function execute permissions for anon and authenticated users)
 3. Confirm that the `incident-attachments` private storage bucket is created.
 
 ---
