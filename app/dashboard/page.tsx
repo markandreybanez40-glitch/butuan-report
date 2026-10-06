@@ -68,7 +68,7 @@ export default async function DashboardOverviewPage() {
             {/* Prominent New Report Button */}
             <div className="shrink-0">
               <Link
-                href="/dashboard/new"
+                href="/dashboard/submit-report"
                 className={cn(
                   buttonVariants({ size: "lg" }),
                   "rounded-full px-6 shadow-md gap-2 w-full sm:w-auto font-semibold"
@@ -180,7 +180,7 @@ export default async function DashboardOverviewPage() {
                 </p>
               </div>
               <Link
-                href="/dashboard/reports"
+                href="/dashboard/my-reports"
                 className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
               >
                 <span>View all reports</span>
@@ -199,7 +199,7 @@ export default async function DashboardOverviewPage() {
                   Spot a broken road, clogged drainage, or civic hazard? Submit your first report to help improve our community.
                 </p>
                 <Link
-                  href="/dashboard/new"
+                  href="/dashboard/submit-report"
                   className={cn(buttonVariants({ size: "sm" }), "rounded-full shadow-xs")}
                 >
                   <Plus className="mr-1.5 size-3.5" />

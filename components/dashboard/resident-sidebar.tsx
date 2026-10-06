@@ -44,15 +44,15 @@ export function ResidentSidebar({ userEmail, userName, userRole }: ResidentSideb
     },
     {
       title: "My Reports",
-      href: "/dashboard/reports",
+      href: "/dashboard/my-reports",
       icon: FileText,
-      active: pathname.startsWith("/dashboard/reports"),
+      active: pathname.startsWith("/dashboard/my-reports") || pathname.startsWith("/dashboard/reports"),
     },
     {
       title: "Submit Report",
-      href: "/dashboard/new",
+      href: "/dashboard/submit-report",
       icon: PlusCircle,
-      active: pathname === "/dashboard/new",
+      active: pathname === "/dashboard/submit-report" || pathname === "/dashboard/new",
     },
     {
       title: "Incident Map",
