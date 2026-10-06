@@ -121,6 +121,9 @@ export async function updateStaffIncidentStatusAction(formData: FormData): Promi
   revalidatePath("/staff");
   revalidatePath("/staff/incidents");
   revalidatePath(`/staff/incidents/${incidentId}`);
+  revalidatePath("/admin");
+  revalidatePath("/admin/reports");
+  revalidatePath(`/admin/reports/${incidentId}`);
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/reports");
   revalidatePath(`/dashboard/reports/${incidentId}`);
@@ -211,6 +214,9 @@ export async function assignIncidentStaffAction(formData: FormData): Promise<Sta
   revalidatePath("/staff");
   revalidatePath("/staff/incidents");
   revalidatePath(`/staff/incidents/${incidentId}`);
+  revalidatePath("/admin");
+  revalidatePath("/admin/reports");
+  revalidatePath(`/admin/reports/${incidentId}`);
   revalidatePath(`/dashboard/reports/${incidentId}`);
 
   return { success: true };
@@ -290,6 +296,8 @@ export async function addStaffIncidentUpdateAction(formData: FormData): Promise<
 
   revalidatePath("/staff");
   revalidatePath(`/staff/incidents/${incidentId}`);
+  revalidatePath("/admin");
+  revalidatePath(`/admin/reports/${incidentId}`);
   if (visibility === "public") {
     revalidatePath(`/dashboard/reports/${incidentId}`);
   }

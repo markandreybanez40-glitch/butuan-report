@@ -136,6 +136,10 @@ export async function getMyIncidentWithDetails(id: string): Promise<IncidentWith
     rawIncident.attachments = attachmentsWithUrls;
   }
 
+  if (rawIncident?.updates) {
+    rawIncident.updates = rawIncident.updates.filter((u) => u.visibility === "public");
+  }
+
   return rawIncident ?? null;
 }
 

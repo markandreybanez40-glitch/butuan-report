@@ -141,6 +141,10 @@ export async function submitIncidentAction(
     // Revalidate paths to update dashboard stats and list views
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/reports");
+    revalidatePath("/admin");
+    revalidatePath("/admin/reports");
+    revalidatePath("/staff");
+    revalidatePath("/staff/incidents");
 
     return {
       success: true,
