@@ -37,7 +37,7 @@ export function NotificationItem({
   const getTargetHref = () => {
     if (!notification.related_incident_id) return "#";
     if (role === "admin") {
-      return `/staff/incidents/${notification.related_incident_id}`;
+      return `/admin/reports/${notification.related_incident_id}`;
     }
     if (role === "staff") {
       return `/staff/incidents/${notification.related_incident_id}`;
