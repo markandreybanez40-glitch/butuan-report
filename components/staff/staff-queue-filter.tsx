@@ -128,6 +128,7 @@ export function StaffQueueFilter({ categories }: StaffQueueFilterProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             type="search"
+            aria-label="Search incident queue"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search queue by report #, title, barangay, or description..."
@@ -136,6 +137,7 @@ export function StaffQueueFilter({ categories }: StaffQueueFilterProps) {
           {searchTerm && (
             <button
               type="button"
+              aria-label="Clear search"
               onClick={() => {
                 setSearchTerm("");
                 applyFilters({ q: "" });
@@ -174,6 +176,7 @@ export function StaffQueueFilter({ categories }: StaffQueueFilterProps) {
           <select
             value={currentStatus}
             disabled={isPending}
+            aria-label="Filter incidents by status"
             onChange={(e) => applyFilters({ status: e.target.value })}
             className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
@@ -193,6 +196,7 @@ export function StaffQueueFilter({ categories }: StaffQueueFilterProps) {
           <select
             value={currentSeverity}
             disabled={isPending}
+            aria-label="Filter incidents by severity"
             onChange={(e) => applyFilters({ severity: e.target.value })}
             className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
@@ -212,6 +216,7 @@ export function StaffQueueFilter({ categories }: StaffQueueFilterProps) {
           <select
             value={currentCategory}
             disabled={isPending}
+            aria-label="Filter incidents by category"
             onChange={(e) => applyFilters({ category: e.target.value })}
             className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
@@ -232,6 +237,7 @@ export function StaffQueueFilter({ categories }: StaffQueueFilterProps) {
           <select
             value={currentBarangay}
             disabled={isPending}
+            aria-label="Filter incidents by barangay"
             onChange={(e) => applyFilters({ barangay: e.target.value })}
             className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >

@@ -104,6 +104,7 @@ export function ResidentIncidentMap({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
               placeholder="Search reports by title, number, or barangay..."
+              aria-label="Search incident reports"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9 text-xs bg-background"
@@ -115,6 +116,7 @@ export function ResidentIncidentMap({
             {/* Category */}
             <select
               value={selectedCategory}
+              aria-label="Filter by incident category"
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
@@ -129,6 +131,7 @@ export function ResidentIncidentMap({
             {/* Status */}
             <select
               value={selectedStatus}
+              aria-label="Filter by status"
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
@@ -144,6 +147,7 @@ export function ResidentIncidentMap({
             {/* Severity */}
             <select
               value={selectedSeverity}
+              aria-label="Filter by severity"
               onChange={(e) => setSelectedSeverity(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >

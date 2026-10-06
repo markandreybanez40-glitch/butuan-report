@@ -182,6 +182,7 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             type="search"
+            aria-label="Search users"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search users by full name, phone number, or barangay..."
@@ -190,6 +191,7 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
           {searchTerm && (
             <button
               type="button"
+              aria-label="Clear search"
               onClick={() => {
                 setSearchTerm("");
                 applyFilters({ q: "" });
@@ -206,6 +208,7 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
             <select
               value={currentRole}
               disabled={isNavPending}
+              aria-label="Filter users by role"
               onChange={(e) => applyFilters({ role: e.target.value })}
               className="h-9 rounded-md border border-input bg-background px-3 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >

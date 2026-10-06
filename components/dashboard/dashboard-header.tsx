@@ -33,7 +33,7 @@ export function DashboardHeader({ title = "Resident Dashboard", subtitle }: Dash
 
       <div className="flex items-center gap-2.5 sm:gap-3">
         <Link
-          href="/dashboard/map"
+          href="/dashboard/incident-map"
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-full shadow-2xs gap-1.5 hidden md:inline-flex text-xs")}
         >
           <Compass className="size-3.5" />
@@ -41,8 +41,8 @@ export function DashboardHeader({ title = "Resident Dashboard", subtitle }: Dash
         </Link>
 
         <Link
-          href="/dashboard/new"
-          className={cn(buttonVariants({ size: "sm" }), "rounded-full shadow-xs gap-1.5 hidden sm:inline-flex")}
+          href="/dashboard/submit-report"
+          className={cn(buttonVariants({ size: "sm" }), "rounded-full shadow-xs gap-1.5 hidden sm:inline-flex text-xs")}
         >
           <Plus className="size-4" />
           <span>New Report</span>

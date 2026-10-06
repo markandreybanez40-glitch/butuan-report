@@ -201,6 +201,7 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               type="search"
+              aria-label="Search audit logs"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by action name (e.g., user_role_changed, department_created)..."
@@ -209,6 +210,7 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
             {searchTerm && (
               <button
                 type="button"
+                aria-label="Clear search"
                 onClick={() => {
                   setSearchTerm("");
                   applyFilters({ q: "" });
@@ -243,6 +245,7 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
             <select
               value={currentAction}
               disabled={isPending}
+              aria-label="Filter audit logs by action"
               onChange={(e) => applyFilters({ action: e.target.value })}
               className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
@@ -267,6 +270,7 @@ export function AuditLogsTable({ logs }: AuditLogsTableProps) {
             <select
               value={currentEntity}
               disabled={isPending}
+              aria-label="Filter audit logs by entity type"
               onChange={(e) => applyFilters({ entityType: e.target.value })}
               className="w-full h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
