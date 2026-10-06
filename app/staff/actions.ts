@@ -9,7 +9,7 @@ import {
   notifyIncidentAssigned,
   notifyIncidentUpdateAdded,
 } from "@/lib/data/notifications";
-import type { IncidentStatus } from "@/types";
+import type { IncidentStatus, IncidentSeverity } from "@/types";
 
 export interface StaffActionResult {
   success: boolean;
@@ -304,3 +304,54 @@ export async function addStaffIncidentUpdateAction(formData: FormData): Promise<
 
   return { success: true };
 }
+
+/**
+ * Updates the severity/priority level of an incident.
+ * Restricted to dispatchers and admins.
+ */
+export async function updateIncidentSeverityAction(formData: FormData): Promise<StaffActionResult> {
+  const user = await currentUser();
+  if (!user) {
+    return { success: false, error: "Unauthorized: Please sign in." };
+  }
+
+  const profile = await getCurrentProfile();
+  if (!profile || !["dispatcher", "admin"].includes(profile.role)) {
+    return { success: false, error: "Forbidden: Administrator or Dispatcher credentials required." };
+  }
+
+  const incidentId = (formData.get("incident_id") as string)?.trim();
+  const severity = (formData.get("severity") as string)?.trim() as IncidentSeverity;
+
+  if (!incidentId) {
+    return { success: false, error: "Incident ID is required." };
+  }
+
+  if (!severity || !["low", "medium", "high", "critical"].includes(severity)) {
+    return { success: false, error: `Invalid severity level: "${severity}".` };
+  }
+
+  const supabase = createServerSupabaseClient();
+  const { error: updateError } = await supabase
+    .from("incidents")
+    .update({ severity })
+    .eq("id", incidentId);
+
+  if (updateError) {
+    console.error("Error updating incident severity:", updateError.message);
+    return { success: false, error: updateError.message };
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/reports");
+  revalidatePath(`/admin/reports/${incidentId}`);
+  revalidatePath("/staff");
+  revalidatePath("/staff/incidents");
+  revalidatePath(`/staff/incidents/${incidentId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/my-reports");
+  revalidatePath(`/dashboard/reports/${incidentId}`);
+
+  return { success: true };
+}
+

@@ -16,12 +16,13 @@ import {
   updateStaffIncidentStatusAction,
   assignIncidentStaffAction,
   addStaffIncidentUpdateAction,
+  updateIncidentSeverityAction,
 } from "@/app/staff/actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import type { IncidentStatus, Department, UserRole } from "@/types";
+import type { IncidentStatus, IncidentSeverity, Department, UserRole } from "@/types";
 
 interface StatusUpdateFormProps {
   incidentId: string;
@@ -444,6 +445,110 @@ export function AddUpdateForm({ incidentId }: AddUpdateFormProps) {
                 <Send className="size-3" />
                 <span>Post {visibility === "public" ? "Public Update" : "Internal Note"}</span>
               </>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface SeverityUpdateFormProps {
+  incidentId: string;
+  currentSeverity: IncidentSeverity;
+}
+
+export function SeverityUpdateForm({
+  incidentId,
+  currentSeverity,
+}: SeverityUpdateFormProps) {
+  const [isPending, startTransition] = useTransition();
+  const [selectedSeverity, setSelectedSeverity] = useState<IncidentSeverity>(currentSeverity);
+  const [feedback, setFeedback] = useState<{ success: boolean; msg: string } | null>(null);
+
+  const severityOptions: { value: IncidentSeverity; label: string; desc: string }[] = [
+    { value: "low", label: "Low", desc: "Minor civic nuisance or non-urgent repair" },
+    { value: "medium", label: "Medium", desc: "Moderate hazard affecting neighborhood traffic" },
+    { value: "high", label: "High", desc: "Significant obstruction or property hazard" },
+    { value: "critical", label: "Critical", desc: "Severe emergency posing active public danger" },
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+
+    const formData = new FormData();
+    formData.append("incident_id", incidentId);
+    formData.append("severity", selectedSeverity);
+
+    startTransition(async () => {
+      const res = await updateIncidentSeverityAction(formData);
+      if (res.success) {
+        setFeedback({ success: true, msg: `Severity updated to ${selectedSeverity.toUpperCase()}.` });
+      } else {
+        setFeedback({ success: false, msg: res.error || "Failed to update severity." });
+      }
+    });
+  };
+
+  return (
+    <Card className="border-border/80 shadow-xs">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-bold flex items-center gap-2">
+          <AlertTriangle className="size-4 text-amber-500" />
+          Set Priority & Severity
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Calibrate emergency triage priority for municipal dispatch
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {feedback && (
+          <div
+            className={`p-2.5 rounded-lg text-xs mb-3 flex items-center gap-1.5 ${
+              feedback.success
+                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                : "bg-destructive/10 text-destructive dark:text-red-400 border border-destructive/20"
+            }`}
+          >
+            {feedback.success ? <Check className="size-3.5 shrink-0" /> : <AlertTriangle className="size-3.5 shrink-0" />}
+            <span>{feedback.msg}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="severity" className="text-xs font-semibold text-foreground">
+              Select Severity Level
+            </label>
+            <select
+              id="severity"
+              value={selectedSeverity}
+              disabled={isPending}
+              onChange={(e) => setSelectedSeverity(e.target.value as IncidentSeverity)}
+              className="w-full h-8 rounded-md border border-input bg-card px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {severityOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label} — {opt.desc}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isPending || selectedSeverity === currentSeverity}
+            className="w-full rounded-full text-xs h-8 shadow-xs"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="size-3 animate-spin mr-1" />
+                <span>Updating Priority...</span>
+              </>
+            ) : (
+              <span>Save Severity Level</span>
             )}
           </Button>
         </form>

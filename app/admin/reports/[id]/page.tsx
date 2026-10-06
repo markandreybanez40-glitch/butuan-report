@@ -23,12 +23,13 @@ import {
   StatusUpdateForm,
   AssignmentForm,
   AddUpdateForm,
+  SeverityUpdateForm,
 } from "@/components/staff/staff-action-forms";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { IncidentStatus } from "@/types";
+import type { IncidentStatus, IncidentSeverity } from "@/types";
 
 interface AdminReportDetailPageProps {
   params: Promise<{
@@ -436,7 +437,13 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
               </CardContent>
             </Card>
 
-            {/* Form 3: Add Public Update or Internal Note */}
+            {/* Form 3: Severity & Priority Adjustment */}
+            <SeverityUpdateForm
+              incidentId={incident.id}
+              currentSeverity={incident.severity as IncidentSeverity}
+            />
+
+            {/* Form 4: Add Public Update or Internal Note */}
             <Card className="border-border/80 shadow-2xs">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
