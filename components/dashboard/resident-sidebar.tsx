@@ -56,9 +56,9 @@ export function ResidentSidebar({ userEmail, userName, userRole }: ResidentSideb
     },
     {
       title: "Incident Map",
-      href: "/dashboard/map",
+      href: "/dashboard/incident-map",
       icon: Compass,
-      active: pathname.startsWith("/dashboard/map"),
+      active: pathname.startsWith("/dashboard/incident-map") || pathname.startsWith("/dashboard/map"),
     },
     {
       title: "Notifications",

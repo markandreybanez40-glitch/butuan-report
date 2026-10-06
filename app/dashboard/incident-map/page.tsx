@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   description: "Interactive geographic map of reported incidents across Butuan City",
 };
 
-export default async function ResidentMapPage() {
+export default async function IncidentMapPage() {
   const [incidents, categories] = await Promise.all([
     getMyIncidents(),
     getActiveCategories(),
@@ -29,6 +29,7 @@ export default async function ResidentMapPage() {
       />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+        {/* Page Subheader */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -49,6 +50,7 @@ export default async function ResidentMapPage() {
           </Link>
         </div>
 
+        {/* Interactive Resident Map with Filters */}
         <ResidentIncidentMap
           initialIncidents={incidents}
           categories={categories}
