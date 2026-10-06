@@ -29,17 +29,17 @@
 
 ### 1. Resident Workflow
 1. **Sign Up / Sign In**: Register using email/password authentication on `/sign-in` or `/sign-up`. Account profile is automatically synchronized with the database.
-2. **Submit Incident (`/dashboard/new`)**:
+2. **Submit Incident (`/dashboard/submit-report`)**:
    - Provide Title, Detailed Description, Category, Estimated Severity, and Barangay location.
    - Use the **Interactive Map Picker** to drop a pin or click **"Use My Location"** for GPS auto-detection.
-   - Upload up to 5 photo or document evidence files (JPG, PNG, WebP, HEIC, GIF, PDF up to 10MB each).
-3. **Track Incident Reports (`/dashboard/reports`)**:
+   - Upload up to 5 photo or document evidence files (JPG, PNG, WebP, PDF up to 10MB each).
+3. **Track Incident Reports (`/dashboard/my-reports`)**:
    - View all filed reports with status badges (`Submitted`, `Under Review`, `Assigned`, `In Progress`, `Resolved`, `Closed`).
    - Filter and search by keyword or status.
 4. **Inspect Progress Timeline (`/dashboard/reports/[id]`)**:
    - View milestone dates, assigned department status, and public response notes posted by municipal crews.
-5. **Interactive Resident Map (`/dashboard/map`)**:
-   - View spatial clusters of personal reports across Butuan City.
+5. **Interactive Resident Map (`/dashboard/incident-map`)**:
+   - View spatial clusters of civic reports across Butuan City.
 6. **Notifications (`/dashboard/notifications`)**:
    - Receive real-time system alerts on ticket assignments and status transitions.
 
@@ -77,12 +77,16 @@
 
 ## ⚙️ Environment Variables
 
-Create a `.env.local` file in the project root:
+Create a `.env.local` file in the project root based on `.env.example`:
 
 ```bash
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 CLERK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 
 # Supabase Database & API
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
@@ -104,7 +108,7 @@ npm install
 ### 2. Run Database Migrations
 Execute the SQL migration scripts in order on your Supabase PostgreSQL instance:
 1. `supabase/migrations/20261002000000_init_schema.sql` (Tables, indexes, triggers, and seed data)
-2. `supabase/migrations/20261002000001_security_hardening.sql` (RLS policies and `app_auth` schema isolation)
+2. `supabase/migrations/20261002000001_security_hardening.sql` (RLS policies and security routines)
 3. `supabase/migrations/20261002000002_storage_setup.sql` (Storage bucket initialization)
 4. `supabase/migrations/20261002000003_audit_and_storage_hardening.sql` (Private storage checks and audit log immutability)
 
@@ -122,43 +126,11 @@ npm run build  # Test production build bundle
 
 ---
 
-## 🔒 Security & Data Protection Controls
+## 📚 Project Documentation
 
-1. **Row Level Security (RLS)**: Enforced across all database tables. Citizens can only view their own reports and public timeline updates.
-2. **Private Storage Buckets**: Photo and document attachments are stored in a private bucket (`incident-attachments`) and served via short-lived signed URLs.
-3. **Internal Notes Isolation**: Municipal coordination notes (`visibility = 'internal'`) are filtered out at the RLS database level.
-4. **Append-Only Audit Logs**: System activity logs are write-restricted to administrators and cannot be altered or deleted.
-5. **Production Headers**: Strict HTTP security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`) applied in `next.config.ts`.
-
----
-
-## 📦 Deployment Instructions (Vercel / Production)
-
-1. **Push to GitHub**:
-   Ensure the repository is committed and pushed to your remote Git repository.
-2. **Import Project to Vercel / Netlify**:
-   - Framework preset: `Next.js`
-   - Build Command: `npm run build`
-   - Output Directory: `.next`
-3. **Configure Environment Variables**:
-   Add the 5 environment variables listed above under project settings.
-4. **Configure Clerk Production Domain**:
-   In Clerk Dashboard -> *Domains & Paths*, add your live production domain to allowed redirect origins.
-5. **Initial Admin Setup**:
-   To bootstrap the first administrator account:
-   ```sql
-   UPDATE public.profiles
-   SET role = 'admin'
-   WHERE clerk_user_id = 'YOUR_CLERK_USER_ID';
-   ```
-
----
-
-## 🛠️ Basic Troubleshooting
-
-- **Access Denied on `/admin` or `/staff`**: Newly registered accounts default to the `resident` role. An administrator must update the user's role via `/admin/users` or via SQL in Supabase.
-- **Attachment Upload Failures**: Verify that the Supabase `incident-attachments` bucket exists and has the 10MB limit and MIME type constraints configured via `20261002000003_audit_and_storage_hardening.sql`.
-- **Clerk Authentication Redirect Loops**: Ensure `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` match your Clerk instance and that redirect URLs match your environment.
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Production deployment instructions for Vercel, Supabase, and custom domains.
+- **[SECURITY.md](SECURITY.md)**: Details on authentication, role-based access control, RLS policies, and data privacy.
+- **[TESTING.md](TESTING.md)**: End-to-end smoke testing flows and access boundary validations.
 
 ---
 
