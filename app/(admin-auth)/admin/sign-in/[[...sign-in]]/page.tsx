@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import { SignIn, SignOutButton } from "@clerk/nextjs";
-import { ShieldCheck, ShieldAlert, Building2, User, LogOut } from "lucide-react";
-import { getCurrentProfile } from "@/lib/data/profiles";
+import { ShieldCheck, ShieldAlert, Building2, LogOut } from "lucide-react";
+import { getOrCreateCurrentProfile } from "@/lib/data/profiles";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -19,7 +19,7 @@ export default async function AdminSignInPage() {
   const user = await currentUser();
 
   if (user) {
-    const profile = await getCurrentProfile();
+    const profile = await getOrCreateCurrentProfile();
 
     if (profile?.role === "admin") {
       redirect("/admin");
@@ -143,7 +143,7 @@ export default async function AdminSignInPage() {
           />
         </div>
 
-        {/* Security Notice & Resident Switcher */}
+        {/* Security Notice */}
         <div className="rounded-xl border border-border/80 bg-card/60 p-4 space-y-3 text-xs text-muted-foreground shadow-2xs">
           <div className="flex items-start gap-2.5">
             <Building2 className="size-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
@@ -155,17 +155,6 @@ export default async function AdminSignInPage() {
                 Administrative actions and access logs are recorded for municipal audit compliance. Resident accounts logging in here will be automatically redirected to the citizen dashboard.
               </p>
             </div>
-          </div>
-
-          <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">Looking for public citizen services?</span>
-            <Link
-              href="/sign-in"
-              className="font-medium text-primary hover:underline inline-flex items-center gap-1"
-            >
-              <User className="size-3" />
-              Resident Sign In &rarr;
-            </Link>
           </div>
         </div>
       </main>

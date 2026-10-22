@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SignUp } from "@clerk/nextjs";
-import { UserPlus, Shield } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata = {
@@ -30,7 +30,7 @@ export default function SignUpPage() {
         <div className="text-center space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
             <UserPlus className="size-3.5" />
-            Citizen Registration
+            Account Registration
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Create your account
@@ -45,7 +45,6 @@ export default function SignUpPage() {
             routing="path"
             path="/sign-up"
             fallbackRedirectUrl="/dashboard"
-            forceRedirectUrl="/dashboard"
             signInUrl="/sign-in"
             appearance={{
               elements: {
@@ -56,17 +55,6 @@ export default function SignUpPage() {
               },
             }}
           />
-        </div>
-
-        <div className="rounded-xl border border-border/80 bg-card/60 p-4 text-center text-xs text-muted-foreground shadow-2xs">
-          <span>Already have an administrative account? </span>
-          <Link
-            href="/admin/sign-in"
-            className="font-semibold text-purple-600 dark:text-purple-400 hover:underline inline-flex items-center gap-1 ml-1"
-          >
-            <Shield className="size-3" />
-            Admin Login
-          </Link>
         </div>
       </main>
 

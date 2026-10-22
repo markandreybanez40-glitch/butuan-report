@@ -31,11 +31,13 @@ const IncidentsMap = dynamic(
 interface ResidentIncidentMapProps {
   initialIncidents: IncidentWithCategory[];
   categories: IncidentCategory[];
+  highlightIncidentId?: string | null;
 }
 
 export function ResidentIncidentMap({
   initialIncidents,
   categories,
+  highlightIncidentId,
 }: ResidentIncidentMapProps) {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -222,6 +224,7 @@ export function ResidentIncidentMap({
           incidents={filteredIncidents}
           role="resident"
           height="h-[520px] sm:h-[580px]"
+          highlightIncidentId={highlightIncidentId}
         />
       </div>
 

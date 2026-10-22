@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import type { IncidentCategory } from "@/types";
 
 /**
@@ -6,7 +6,7 @@ import type { IncidentCategory } from "@/types";
  */
 export async function getActiveCategories(): Promise<IncidentCategory[]> {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase
       .from("incident_categories")
       .select("*")

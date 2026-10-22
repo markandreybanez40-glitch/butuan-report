@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import type { AuditLog, AuditLogInsert } from "@/types";
 
 /**
@@ -7,7 +7,7 @@ import type { AuditLog, AuditLogInsert } from "@/types";
  * Audit entries are strictly append-only and written through authorized server operations.
  */
 export async function createAuditLogEntry(entry: AuditLogInsert): Promise<AuditLog | null> {
-  const supabase = createServerSupabaseClient();
+  const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
     .from("audit_logs")
     .insert(entry)

@@ -4,15 +4,17 @@ import {
   Calendar,
   ArrowRight,
   Inbox,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/data/profiles";
-import { getStaffIncidentQueue } from "@/lib/data/staff";
+import { getStaffIncidentPaginatedQueue } from "@/lib/data/staff";
 import { getActiveCategories } from "@/lib/data/categories";
 import { StaffHeader } from "@/components/staff/staff-header";
 import { StaffQueueFilter } from "@/components/staff/staff-queue-filter";
 import { IncidentStatusBadge, IncidentSeverityBadge } from "@/components/dashboard/status-badge";
 import { Card } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
@@ -23,6 +25,7 @@ interface StaffIncidentsPageProps {
     severity?: string;
     category?: string;
     barangay?: string;
+    page?: string;
   }>;
 }
 
@@ -37,16 +40,38 @@ export default async function StaffIncidentsPage({ searchParams }: StaffIncident
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const { q, status, severity, category, barangay } = await searchParams;
+  const { q, status, severity, category, barangay, page } = await searchParams;
+  const currentPage = parseInt(page || "1", 10) || 1;
+  const pageSize = 15;
 
-  const categories = await getActiveCategories();
-  const incidents = await getStaffIncidentQueue(profile, {
-    search: q,
-    status,
-    severity,
-    categoryId: category,
-    barangay,
-  });
+  const [categories, queueResult] = await Promise.all([
+    getActiveCategories(),
+    getStaffIncidentPaginatedQueue(profile, {
+      search: q,
+      status,
+      severity,
+      categoryId: category,
+      barangay,
+      page: currentPage,
+      pageSize,
+    }),
+  ]);
+
+  const { incidents, totalCount, totalPages } = queueResult;
+  const startIdx = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endIdx = Math.min(totalCount, currentPage * pageSize);
+
+  const buildPageUrl = (targetPage: number) => {
+    const params = new URLSearchParams();
+    if (q && q.trim()) params.set("q", q.trim());
+    if (status && status !== "all") params.set("status", status);
+    if (severity && severity !== "all") params.set("severity", severity);
+    if (category && category !== "all") params.set("category", category);
+    if (barangay && barangay !== "all") params.set("barangay", barangay);
+    if (targetPage > 1) params.set("page", String(targetPage));
+    const qs = params.toString();
+    return qs ? `/staff/incidents?${qs}` : "/staff/incidents";
+  };
 
   return (
     <>
@@ -67,7 +92,8 @@ export default async function StaffIncidentsPage({ searchParams }: StaffIncident
         {/* Counter and Results */}
         <div className="flex items-center justify-between">
           <div className="text-xs text-muted-foreground">
-            Showing <strong className="text-foreground">{incidents.length}</strong> incident(s) in queue
+            Showing <strong className="text-foreground">{startIdx}–{endIdx}</strong> of{" "}
+            <strong className="text-foreground">{totalCount}</strong> incident(s) in queue
           </div>
         </div>
 
@@ -90,101 +116,177 @@ export default async function StaffIncidentsPage({ searchParams }: StaffIncident
             </div>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {incidents.map((incident) => {
-              const activeAssignment = incident.assignments.find((a) => a.unassigned_at === null);
-              const assignedLabel = activeAssignment?.department?.name ||
-                activeAssignment?.assigned_user?.full_name ||
-                "Unassigned";
+          <div className="space-y-4">
+            <div className="space-y-3">
+              {incidents.map((incident) => {
+                const activeAssignment = incident.assignments.find((a) => a.unassigned_at === null);
+                const assignedLabel = activeAssignment?.department?.name ||
+                  activeAssignment?.assigned_user?.full_name ||
+                  "Unassigned";
 
-              const formattedDate = new Date(incident.created_at).toLocaleDateString("en-PH", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              });
+                const formattedDate = new Date(incident.created_at).toLocaleDateString("en-PH", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
 
-              return (
-                <div
-                  key={incident.id}
-                  className="rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-primary/50 hover:shadow-xs"
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    {/* Left: Identifiers & Main Information */}
-                    <div className="space-y-2 min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs font-extrabold text-primary">
-                          {incident.report_number}
-                        </span>
-                        <span className="text-xs text-muted-foreground">•</span>
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {incident.category?.name || "Civic Hazard"}
-                        </span>
-                        <IncidentSeverityBadge severity={incident.severity} />
-                        <IncidentStatusBadge status={incident.status} />
-                      </div>
-
-                      <Link
-                        href={`/staff/incidents/${incident.id}`}
-                        className="block text-sm font-bold text-foreground hover:text-primary transition-colors truncate"
-                      >
-                        {incident.title}
-                      </Link>
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="size-3 text-primary shrink-0" />
-                          <span>{incident.barangay}</span>
-                          {incident.street_area && <span>({incident.street_area})</span>}
-                        </span>
-
-                        <span className="flex items-center gap-1">
-                          <Calendar className="size-3 shrink-0" />
-                          <span>{formattedDate}</span>
-                        </span>
-
-                        {incident.reporter && (
-                          <span className="text-[11px] text-muted-foreground">
-                            Reporter: <strong>{incident.reporter.full_name}</strong>
+                return (
+                  <div
+                    key={incident.id}
+                    className="rounded-xl border border-border/80 bg-card p-4 transition-all hover:border-primary/50 hover:shadow-xs"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      {/* Left: Identifiers & Main Information */}
+                      <div className="space-y-2 min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-xs font-extrabold text-primary">
+                            {incident.report_number}
                           </span>
-                        )}
-                      </div>
-                    </div>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {incident.category?.name || "Civic Hazard"}
+                          </span>
+                          <IncidentSeverityBadge severity={incident.severity} />
+                          <IncidentStatusBadge status={incident.status} />
+                        </div>
 
-                    {/* Right: Assigned Entity & Action Button */}
-                    <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/50">
-                      <div className="text-left lg:text-right">
-                        <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
-                          Assignment
-                        </span>
-                        <span
+                        <Link
+                          href={`/staff/incidents/${incident.id}`}
+                          className="block text-sm font-bold text-foreground hover:text-primary transition-colors truncate"
+                        >
+                          {incident.title}
+                        </Link>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="size-3 text-primary shrink-0" />
+                            <span>{incident.barangay}</span>
+                            {incident.street_area && <span>({incident.street_area})</span>}
+                          </span>
+
+                          <span className="flex items-center gap-1">
+                            <Calendar className="size-3 shrink-0" />
+                            <span>{formattedDate}</span>
+                          </span>
+
+                          {incident.reporter && (
+                            <span className="text-[11px] text-muted-foreground">
+                              Reporter: <strong>{incident.reporter.full_name}</strong>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right: Assigned Entity & Action Button */}
+                      <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-border/50">
+                        <div className="text-left lg:text-right">
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold block">
+                            Assignment
+                          </span>
+                          <span
+                            className={cn(
+                              "text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-0.5",
+                              activeAssignment
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {assignedLabel}
+                          </span>
+                        </div>
+
+                        <Link
+                          href={`/staff/incidents/${incident.id}`}
                           className={cn(
-                            "text-xs font-semibold px-2 py-0.5 rounded-full inline-block mt-0.5",
-                            activeAssignment
-                              ? "bg-primary/10 text-primary"
-                              : "bg-muted text-muted-foreground"
+                            buttonVariants({ size: "sm" }),
+                            "rounded-full gap-1.5 shadow-xs text-xs px-4"
                           )}
                         >
-                          {assignedLabel}
-                        </span>
+                          <span>Manage</span>
+                          <ArrowRight className="size-3.5" />
+                        </Link>
                       </div>
-
-                      <Link
-                        href={`/staff/incidents/${incident.id}`}
-                        className={cn(
-                          buttonVariants({ size: "sm" }),
-                          "rounded-full gap-1.5 shadow-xs text-xs px-4"
-                        )}
-                      >
-                        <span>Manage</span>
-                        <ArrowRight className="size-3.5" />
-                      </Link>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 px-1 text-xs text-muted-foreground">
+                <div>
+                  Page <strong className="text-foreground">{currentPage}</strong> of{" "}
+                  <strong className="text-foreground">{totalPages}</strong>
                 </div>
-              );
-            })}
+
+                <div className="flex items-center gap-1.5">
+                  {currentPage > 1 ? (
+                    <Link
+                      href={buildPageUrl(currentPage - 1)}
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 text-xs gap-1")}
+                    >
+                      <ChevronLeft className="size-3.5" />
+                      <span>Previous</span>
+                    </Link>
+                  ) : (
+                    <Button variant="outline" size="sm" disabled className="h-8 text-xs gap-1">
+                      <ChevronLeft className="size-3.5" />
+                      <span>Previous</span>
+                    </Button>
+                  )}
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum = i + 1;
+                      if (totalPages > 5) {
+                        if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                      }
+                      const isActive = pageNum === currentPage;
+                      return (
+                        <Link
+                          key={pageNum}
+                          href={buildPageUrl(pageNum)}
+                          className={cn(
+                            buttonVariants({
+                              variant: isActive ? "default" : "outline",
+                              size: "sm",
+                            }),
+                            "h-8 w-8 p-0 text-xs",
+                            isActive ? "bg-primary text-primary-foreground font-semibold" : ""
+                          )}
+                        >
+                          {pageNum}
+                        </Link>
+                      );
+                    })}
+                  </div>
+
+                  {currentPage < totalPages ? (
+                    <Link
+                      href={buildPageUrl(currentPage + 1)}
+                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 text-xs gap-1")}
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="size-3.5" />
+                    </Link>
+                  ) : (
+                    <Button variant="outline" size="sm" disabled className="h-8 text-xs gap-1">
+                      <span>Next</span>
+                      <ChevronRight className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

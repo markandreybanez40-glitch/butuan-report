@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import type { Department } from "@/types";
 
 /**
@@ -6,7 +6,7 @@ import type { Department } from "@/types";
  */
 export async function getActiveDepartments(): Promise<Department[]> {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase
       .from("departments")
       .select("*")

@@ -6,11 +6,8 @@ import {
   ShieldAlert,
   LayoutDashboard,
   ClipboardList,
-  Home,
-  User,
-  ArrowLeftRight,
   Bell,
-  Compass,
+  User,
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,18 +18,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
-import type { UserRole } from "@/types";
 
 interface StaffSidebarProps {
   userEmail?: string;
   userName?: string;
-  userRole: UserRole;
 }
 
-export function StaffSidebar({ userEmail, userName, userRole }: StaffSidebarProps) {
+export function StaffSidebar({ userEmail, userName }: StaffSidebarProps) {
   const pathname = usePathname();
 
   const navItems = [
@@ -43,16 +37,10 @@ export function StaffSidebar({ userEmail, userName, userRole }: StaffSidebarProp
       active: pathname === "/staff",
     },
     {
-      title: "Incident Queue",
+      title: "Assigned Reports",
       href: "/staff/incidents",
       icon: ClipboardList,
       active: pathname.startsWith("/staff/incidents"),
-    },
-    {
-      title: "Incident Map",
-      href: "/staff/map",
-      icon: Compass,
-      active: pathname.startsWith("/staff/map"),
     },
     {
       title: "Notifications",
@@ -62,43 +50,24 @@ export function StaffSidebar({ userEmail, userName, userRole }: StaffSidebarProp
     },
   ];
 
-  const roleBadgeConfig = {
-    dispatcher: {
-      label: "Dispatcher",
-      className: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300/40 dark:border-amber-800/50",
-    },
-    responder: {
-      label: "Field Responder",
-      className: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300/40 dark:border-emerald-800/50",
-    },
-    admin: {
-      label: "System Admin",
-      className: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-300/40 dark:border-purple-800/50",
-    },
-    resident: {
-      label: "Resident",
-      className: "bg-muted text-muted-foreground",
-    },
-  }[userRole];
-
   return (
     <Sidebar collapsible="icon" className="border-r border-border/80">
       {/* Sidebar Header */}
       <SidebarHeader className="border-b border-border/60 p-4">
         <Link href="/staff" className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
             <ShieldAlert className="size-5" />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold tracking-tight text-foreground leading-none">
-              Butuan Ops
+              Responder Ops
             </span>
             <div className="flex items-center gap-1.5 mt-1">
               <Badge
                 variant="outline"
-                className={`text-[10px] px-1.5 py-0 uppercase tracking-wider font-semibold ${roleBadgeConfig.className}`}
+                className="text-[10px] px-1.5 py-0 uppercase tracking-wider font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300/40 dark:border-emerald-800/50"
               >
-                {roleBadgeConfig.label}
+                Field Responder
               </Badge>
             </div>
           </div>
@@ -118,7 +87,7 @@ export function StaffSidebar({ userEmail, userName, userRole }: StaffSidebarProp
                   tooltip={item.title}
                   className={
                     item.active
-                      ? "bg-primary text-primary-foreground font-medium hover:bg-primary/90 hover:text-primary-foreground"
+                      ? "bg-emerald-600 text-white font-medium hover:bg-emerald-700 hover:text-white"
                       : ""
                   }
                 >
@@ -129,59 +98,20 @@ export function StaffSidebar({ userEmail, userName, userRole }: StaffSidebarProp
             );
           })}
         </SidebarMenu>
-
-        <SidebarSeparator className="my-4" />
-
-        <SidebarMenu>
-          {userRole === "admin" && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link href="/admin" />}
-                tooltip="Admin Command Center"
-                className="text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700"
-              >
-                <ShieldAlert className="size-4 text-purple-600" />
-                <span>Admin Panel</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/dashboard" />}
-              tooltip="Resident Portal"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeftRight className="size-4" />
-              <span>Resident View</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/" />}
-              tooltip="Public Portal"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Home className="size-4" />
-              <span>Public Site</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
       </SidebarContent>
 
       {/* Footer User Info */}
       <SidebarFooter className="border-t border-border/60 p-3">
         <div className="flex items-center gap-3 px-1 group-data-[collapsible=icon]:hidden">
-          <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
+          <div className="flex size-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 font-bold text-xs">
             <User className="size-4" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-xs font-semibold text-foreground truncate">
-              {userName || "Staff Member"}
+              {userName || "Field Responder"}
             </span>
             <span className="text-[10px] text-muted-foreground truncate">
-              {userEmail || "staff@butuan.gov.ph"}
+              {userEmail || "responder@butuan.gov.ph"}
             </span>
           </div>
         </div>

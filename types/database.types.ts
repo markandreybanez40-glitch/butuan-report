@@ -85,8 +85,11 @@ export type Database = {
           assigned_by: string
           assigned_user_id: string | null
           department_id: string | null
+          dispatch_vehicle: string | null
+          field_responder: string | null
           id: string
           incident_id: string
+          instruction: string | null
           unassigned_at: string | null
         }
         Insert: {
@@ -94,8 +97,11 @@ export type Database = {
           assigned_by: string
           assigned_user_id?: string | null
           department_id?: string | null
+          dispatch_vehicle?: string | null
+          field_responder?: string | null
           id?: string
           incident_id: string
+          instruction?: string | null
           unassigned_at?: string | null
         }
         Update: {
@@ -103,8 +109,11 @@ export type Database = {
           assigned_by?: string
           assigned_user_id?: string | null
           department_id?: string | null
+          dispatch_vehicle?: string | null
+          field_responder?: string | null
           id?: string
           incident_id?: string
+          instruction?: string | null
           unassigned_at?: string | null
         }
         Relationships: [
@@ -383,6 +392,7 @@ export type Database = {
           barangay: string | null
           clerk_user_id: string
           created_at: string
+          department_id: string | null
           full_name: string
           id: string
           phone: string | null
@@ -393,6 +403,7 @@ export type Database = {
           barangay?: string | null
           clerk_user_id: string
           created_at?: string
+          department_id?: string | null
           full_name: string
           id?: string
           phone?: string | null
@@ -403,13 +414,22 @@ export type Database = {
           barangay?: string | null
           clerk_user_id?: string
           created_at?: string
+          department_id?: string | null
           full_name?: string
           id?: string
           phone?: string | null
           role?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

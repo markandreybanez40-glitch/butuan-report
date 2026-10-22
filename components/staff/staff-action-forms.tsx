@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import {
   Activity,
   Lock,
@@ -11,7 +11,16 @@ import {
   Loader2,
   AlertTriangle,
   Check,
+  Clock,
+  Truck,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   updateStaffIncidentStatusAction,
   assignIncidentStaffAction,
@@ -21,8 +30,15 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import type { IncidentStatus, IncidentSeverity, Department, UserRole } from "@/types";
+import { Label } from "@/components/ui/label";
+import {
+  FIELD_RESPONDERS,
+  DISPATCH_VEHICLES,
+  type IncidentStatus,
+  type IncidentSeverity,
+  type Department,
+  type UserRole,
+} from "@/types";
 
 interface StatusUpdateFormProps {
   incidentId: string;
@@ -66,7 +82,10 @@ export function StatusUpdateForm({
     const formData = new FormData();
     formData.append("incident_id", incidentId);
     formData.append("status", selectedStatus);
-    if (note.trim()) formData.append("note", note.trim());
+    if (note.trim()) {
+      formData.append("status_change_note", note.trim());
+      formData.append("note", note.trim());
+    }
 
     startTransition(async () => {
       const res = await updateStaffIncidentStatusAction(formData);
@@ -125,16 +144,16 @@ export function StatusUpdateForm({
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="status-note" className="text-xs font-semibold text-foreground">
-              Status Change Note (Optional)
-            </label>
-            <Input
+            <Label htmlFor="status-note" className="text-xs font-semibold text-foreground">
+              Status Change Note (Internal Audit Trail)
+            </Label>
+            <Textarea
               id="status-note"
-              placeholder="e.g. Field crew dispatched to clear debris..."
+              placeholder="Explain why the operational status is changing..."
               value={note}
               disabled={isPending}
               onChange={(e) => setNote(e.target.value)}
-              className="text-xs bg-card h-8"
+              className="text-xs bg-card min-h-[64px]"
             />
           </div>
 
@@ -159,49 +178,143 @@ export function StatusUpdateForm({
   );
 }
 
-interface AssignmentFormProps {
+export interface AssignmentFormProps {
   incidentId: string;
   departments: Department[];
-  staffMembers: { id: string; full_name: string; role: string }[];
+  staffMembers?: {
+    id: string;
+    full_name: string;
+    role: string;
+    phone?: string | null;
+    department_id?: string | null;
+    department?: { id: string; name: string } | null;
+  }[];
   currentDepartmentId?: string | null;
   currentResponderId?: string | null;
+  currentFieldResponder?: string | null;
+  currentDispatchVehicle?: string | null;
+  currentStatus?: IncidentStatus;
+  showStatusSelector?: boolean;
+  userRole?: UserRole;
+  onSuccess?: () => void;
 }
 
 export function AssignmentForm({
   incidentId,
   departments,
-  staffMembers,
   currentDepartmentId = null,
-  currentResponderId = null,
+  currentFieldResponder = null,
+  currentDispatchVehicle = null,
+  currentStatus,
+  showStatusSelector = Boolean(currentStatus),
+  userRole = "admin",
+  onSuccess,
 }: AssignmentFormProps) {
   const [isPending, startTransition] = useTransition();
+  const [selectedStatus, setSelectedStatus] = useState<IncidentStatus>(currentStatus || "submitted");
   const [selectedDept, setSelectedDept] = useState(currentDepartmentId || "");
-  const [selectedResponder, setSelectedResponder] = useState(currentResponderId || "");
-  const [note, setNote] = useState("");
+  const [selectedFieldResponder, setSelectedFieldResponder] = useState<string>(currentFieldResponder || "");
+  const [selectedVehicle, setSelectedVehicle] = useState<string>(currentDispatchVehicle || "");
   const [feedback, setFeedback] = useState<{ success: boolean; msg: string } | null>(null);
+
+  // Sync state if server revalidates and passes updated props
+  useEffect(() => {
+    if (currentStatus) setSelectedStatus(currentStatus);
+  }, [currentStatus]);
+
+  useEffect(() => {
+    setSelectedDept(currentDepartmentId || "");
+  }, [currentDepartmentId]);
+
+  useEffect(() => {
+    setSelectedFieldResponder(currentFieldResponder || "");
+  }, [currentFieldResponder]);
+
+  useEffect(() => {
+    setSelectedVehicle(currentDispatchVehicle || "");
+  }, [currentDispatchVehicle]);
+
+  const isResponder = userRole === "responder";
+  const statusOptions: { value: IncidentStatus; label: string }[] = isResponder
+    ? [
+        { value: "in_progress", label: "In Progress (Field Action)" },
+        { value: "resolved", label: "Resolved (Hazard Cleared)" },
+      ]
+    : [
+        { value: "submitted", label: "Submitted (New Report)" },
+        { value: "under_review", label: "Under Review (Triage)" },
+        { value: "assigned", label: "Assigned to Department/Unit" },
+        { value: "in_progress", label: "In Progress (Operations Active)" },
+        { value: "resolved", label: "Resolved (Action Completed)" },
+        { value: "closed", label: "Closed (Archived)" },
+        { value: "rejected", label: "Rejected (Invalid/Out of Scope)" },
+        { value: "duplicate", label: "Duplicate Report" },
+        { value: "cancelled", label: "Cancelled" },
+      ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
 
-    if (!selectedDept && !selectedResponder) {
-      setFeedback({ success: false, msg: "Please choose a department or a responder to assign." });
+    const isStatusChanged = Boolean(showStatusSelector && currentStatus && selectedStatus !== currentStatus);
+    const isAssignmentSpecified = Boolean(selectedDept || selectedFieldResponder || selectedVehicle);
+    const isAssignmentModified =
+      selectedDept !== (currentDepartmentId || "") ||
+      selectedFieldResponder !== (currentFieldResponder || "") ||
+      selectedVehicle !== (currentDispatchVehicle || "");
+
+    const shouldRunAssignment =
+      Boolean(selectedDept || selectedFieldResponder || selectedVehicle) &&
+      (isAssignmentModified || (!currentDepartmentId && !currentFieldResponder && !currentDispatchVehicle && isAssignmentSpecified));
+
+    if (!isStatusChanged && !shouldRunAssignment) {
+      setFeedback({ success: false, msg: "Please select a new status, department, responder, or vehicle to save." });
       return;
     }
 
-    const formData = new FormData();
-    formData.append("incident_id", incidentId);
-    if (selectedDept) formData.append("department_id", selectedDept);
-    if (selectedResponder) formData.append("assigned_user_id", selectedResponder);
-    if (note.trim()) formData.append("assignment_note", note.trim());
-
     startTransition(async () => {
-      const res = await assignIncidentStaffAction(formData);
-      if (res.success) {
-        setFeedback({ success: true, msg: "Assignment updated successfully." });
-        setNote("");
+      let assignmentError: string | null = null;
+      let statusError: string | null = null;
+
+      // 1. Process assignment update if department, field responder, or vehicle was specified / modified
+      if (shouldRunAssignment) {
+        const formData = new FormData();
+        formData.append("incident_id", incidentId);
+        if (selectedDept) formData.append("department_id", selectedDept);
+        if (selectedFieldResponder) formData.append("field_responder", selectedFieldResponder);
+        if (selectedVehicle) formData.append("dispatch_vehicle", selectedVehicle);
+        if (isStatusChanged) formData.append("skip_status_update", "true");
+
+        const res = await assignIncidentStaffAction(formData);
+        if (!res.success) {
+          assignmentError = res.error || "Failed to update assignment.";
+        }
+      }
+
+      // 2. Process status update if status actually changed
+      if (!assignmentError && isStatusChanged) {
+        const formData = new FormData();
+        formData.append("incident_id", incidentId);
+        formData.append("status", selectedStatus);
+
+        const res = await updateStaffIncidentStatusAction(formData);
+        if (!res.success) {
+          statusError = res.error || "Failed to update status.";
+        }
+      }
+
+      // If any error occurred, display clear feedback while keeping all entered state untouched
+      if (assignmentError || statusError) {
+        setFeedback({ success: false, msg: assignmentError || statusError || "Failed to save changes." });
       } else {
-        setFeedback({ success: false, msg: res.error || "Failed to update assignment." });
+        const messages: string[] = [];
+        if (isStatusChanged) messages.push(`status updated to ${selectedStatus.toUpperCase().replace("_", " ")}`);
+        if (shouldRunAssignment) messages.push("assignment updated");
+        setFeedback({
+          success: true,
+          msg: `Changes saved successfully${messages.length > 0 ? ` (${messages.join(", ")})` : ""}.`,
+        });
+        if (onSuccess) onSuccess();
       }
     });
   };
@@ -214,7 +327,7 @@ export function AssignmentForm({
           Dispatch & Assignment
         </CardTitle>
         <CardDescription className="text-xs">
-          Route incident to municipal departments and response units
+          Route incident to municipal departments, assign field responders, and update operational status
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -232,11 +345,42 @@ export function AssignmentForm({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Select New Status */}
+          {showStatusSelector && (
+            <div className="space-y-1">
+              <Label htmlFor="status" className="text-xs font-semibold text-foreground flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Clock className="size-3 text-muted-foreground" />
+                  <span>Select New Status</span>
+                </span>
+                {currentStatus && (
+                  <span className="text-[10px] text-muted-foreground font-normal">
+                    Current: <span className="font-semibold text-foreground">{currentStatus.toUpperCase().replace("_", " ")}</span>
+                  </span>
+                )}
+              </Label>
+              <select
+                id="status"
+                value={selectedStatus}
+                disabled={isPending}
+                onChange={(e) => setSelectedStatus(e.target.value as IncidentStatus)}
+                className="w-full h-8 rounded-md border border-input bg-card px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                {statusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Department */}
           <div className="space-y-1">
-            <label htmlFor="dept" className="text-xs font-semibold text-foreground flex items-center gap-1">
+            <Label htmlFor="dept" className="text-xs font-semibold text-foreground flex items-center gap-1">
               <Building className="size-3 text-muted-foreground" />
               <span>Department</span>
-            </label>
+            </Label>
             <select
               id="dept"
               value={selectedDept}
@@ -244,7 +388,7 @@ export function AssignmentForm({
               onChange={(e) => setSelectedDept(e.target.value)}
               className="w-full h-8 rounded-md border border-input bg-card px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <option value="">-- No Department Assigned --</option>
+              <option value="">-- Select Department --</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -253,39 +397,54 @@ export function AssignmentForm({
             </select>
           </div>
 
+          {/* Field Responder (Responder 1–5 only) */}
           <div className="space-y-1">
-            <label htmlFor="responder" className="text-xs font-semibold text-foreground flex items-center gap-1">
+            <Label htmlFor="staff-field-responder" className="text-xs font-semibold text-foreground flex items-center gap-1">
               <UserCheck className="size-3 text-muted-foreground" />
               <span>Field Responder</span>
-            </label>
+            </Label>
             <select
-              id="responder"
-              value={selectedResponder}
+              id="staff-field-responder"
+              value={selectedFieldResponder}
               disabled={isPending}
-              onChange={(e) => setSelectedResponder(e.target.value)}
+              onChange={(e) => setSelectedFieldResponder(e.target.value)}
               className="w-full h-8 rounded-md border border-input bg-card px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              <option value="">-- No Specific Responder --</option>
-              {staffMembers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.full_name} ({s.role.toUpperCase()})
+              <option value="">-- Select Field Responder (Responder 1–5) --</option>
+              {FIELD_RESPONDERS.map((responder) => (
+                <option key={responder} value={responder}>
+                  {responder}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Dispatch Vehicle (Vehicle 1–5 only) using shadcn Select */}
           <div className="space-y-1">
-            <label htmlFor="assign-note" className="text-xs font-semibold text-foreground">
-              Internal Dispatch Instruction (Optional)
-            </label>
-            <Input
-              id="assign-note"
-              placeholder="e.g. Priority dispatch for heavy equipment..."
-              value={note}
+            <Label htmlFor="dispatch-vehicle" className="text-xs font-semibold text-foreground flex items-center gap-1">
+              <Truck className="size-3 text-muted-foreground" />
+              <span>Dispatch Vehicle</span>
+            </Label>
+            <Select
+              value={selectedVehicle || null}
+              onValueChange={(val) => setSelectedVehicle((val as string) || "")}
               disabled={isPending}
-              onChange={(e) => setNote(e.target.value)}
-              className="text-xs bg-card h-8"
-            />
+            >
+              <SelectTrigger
+                id="dispatch-vehicle"
+                data-testid="dispatch-vehicle-trigger"
+                className="w-full h-8 rounded-md border border-input bg-card px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring justify-between"
+              >
+                <SelectValue placeholder="-- Select Dispatch Vehicle (Vehicle 1–5) --" />
+              </SelectTrigger>
+              <SelectContent>
+                {DISPATCH_VEHICLES.map((vehicle) => (
+                  <SelectItem key={vehicle} value={vehicle}>
+                    {vehicle}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button
@@ -297,10 +456,10 @@ export function AssignmentForm({
             {isPending ? (
               <>
                 <Loader2 className="size-3 animate-spin mr-1" />
-                <span>Assigning...</span>
+                <span>Saving changes...</span>
               </>
             ) : (
-              <span>Save Assignment</span>
+              <span>Save Changes</span>
             )}
           </Button>
         </form>

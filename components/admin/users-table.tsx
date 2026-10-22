@@ -54,7 +54,7 @@ const ROLE_CONFIG: Record<
 > = {
   admin: {
     label: "Administrator",
-    color: "text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20",
+    color: "text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20",
     badgeVariant: "default",
     icon: ShieldAlert,
     desc: "Full administrative access: user management, department settings, category controls, and audit logs.",
@@ -274,14 +274,14 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
                   <TableRow key={u.id} className="hover:bg-muted/30">
                     <TableCell className="py-3">
                       <div className="flex items-center gap-2.5">
-                        <div className="size-8 rounded-full bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="size-8 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
                           {u.full_name?.charAt(0)?.toUpperCase() || "U"}
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground truncate flex items-center gap-1.5">
                             <span>{u.full_name || "Unnamed Resident"}</span>
                             {isCurrentAdmin && (
-                              <Badge variant="outline" className="text-[10px] py-0 px-1 border-purple-500/30 text-purple-600">
+                              <Badge variant="outline" className="text-[10px] py-0 px-1 border-blue-500/30 text-blue-600">
                                 You
                               </Badge>
                             )}
@@ -324,7 +324,7 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
                           variant="outline"
                           size="xs"
                           onClick={() => handleOpenRoleModal(u)}
-                          className="h-7 text-xs border-border/80 hover:border-purple-500/50 hover:text-purple-600"
+                          className="h-7 text-xs border-border/80 hover:border-blue-500/50 hover:text-blue-600"
                         >
                           Change Role
                         </Button>
@@ -343,7 +343,7 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Shield className="size-5 text-purple-600" />
+              <Shield className="size-5 text-blue-600" />
               <span>Modify User Authorization</span>
             </DialogTitle>
             <DialogDescription>
@@ -416,7 +416,7 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
               size="sm"
               onClick={handleConfirmRoleChange}
               disabled={isActionPending || targetRole === selectedUser?.role}
-              className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+              className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
             >
               {isActionPending ? (
                 <>

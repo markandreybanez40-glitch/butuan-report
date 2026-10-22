@@ -2,10 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { currentUser } from "@clerk/nextjs/server";
+import { getCurrentProfile } from "@/lib/data/profiles";
 import { createResidentIncident } from "@/lib/data/incidents";
 import { notifyIncidentSubmitted } from "@/lib/data/notifications";
+import { createAuditLogEntry } from "@/lib/data/audit";
 import {
   uploadIncidentAttachment,
+  validateFileBuffer,
   MAX_FILES_PER_REPORT,
   MAX_FILE_SIZE_BYTES,
   ALLOWED_MIME_TYPES,
@@ -22,8 +25,18 @@ export async function submitIncidentAction(
   prevState: SubmitReportResult | null,
   formData: FormData
 ): Promise<SubmitReportResult> {
-  const user = await currentUser();
-  if (!user) {
+  let user = null;
+  try {
+    user = await currentUser();
+  } catch {
+    user = null;
+  }
+  if (!user && process.env.NODE_ENV === "production") {
+    return { success: false, error: "Unauthorized: Please sign in to submit a report." };
+  }
+
+  const profile = await getCurrentProfile();
+  if (!profile) {
     return { success: false, error: "Unauthorized: Please sign in to submit a report." };
   }
 
@@ -104,6 +117,24 @@ export async function submitIncidentAction(
         error: `File "${file.name}" has an unsupported format (${file.type || "unknown"}). Allowed formats: JPG, PNG, WebP, HEIC, GIF, PDF.`,
       };
     }
+
+    // Inspect binary magic bytes to guarantee file integrity before any DB creation
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const validation = validateFileBuffer(buffer, file.type, file.name);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || `File content validation failed for "${file.name}".`,
+        };
+      }
+    } catch (readErr) {
+      return {
+        success: false,
+        error: `Failed to inspect file "${file.name}": ${readErr instanceof Error ? readErr.message : "Unreadable content"}.`,
+      };
+    }
   }
 
   try {
@@ -125,8 +156,24 @@ export async function submitIncidentAction(
     }
 
     // 2. Upload file attachments to private storage bucket and create metadata records
+    const uploadErrors: string[] = [];
     for (const file of validFiles) {
-      await uploadIncidentAttachment(incident.id, file);
+      try {
+        await uploadIncidentAttachment(incident.id, file);
+      } catch (attachErr) {
+        const msg = attachErr instanceof Error ? attachErr.message : `Failed to upload "${file.name}".`;
+        console.error(`Failed to upload attachment "${file.name}":`, attachErr);
+        uploadErrors.push(msg);
+      }
+    }
+
+    if (uploadErrors.length > 0) {
+      return {
+        success: false,
+        error: `Incident #${incident.report_number} was created, but failed to save attachments: ${uploadErrors.join("; ")}`,
+        incidentId: incident.id,
+        reportNumber: incident.report_number,
+      };
     }
 
     // 3. Dispatch notifications to resident and staff
@@ -138,13 +185,36 @@ export async function submitIncidentAction(
       reporter_id: incident.reporter_id,
     });
 
+    // 4. Record audit log for incident submission
+    await createAuditLogEntry({
+      actor_id: incident.reporter_id,
+      action: "incident_submitted",
+      entity_type: "incident",
+      entity_id: incident.id,
+      metadata: {
+        report_number: incident.report_number,
+        title: incident.title,
+        barangay: incident.barangay,
+        severity: incident.severity,
+      },
+    });
+
     // Revalidate paths to update dashboard stats and list views
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/reports");
-    revalidatePath("/admin");
-    revalidatePath("/admin/reports");
-    revalidatePath("/staff");
-    revalidatePath("/staff/incidents");
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath("/dashboard/reports");
+      revalidatePath("/dashboard/my-reports");
+      revalidatePath("/dashboard/incident-map");
+      revalidatePath("/dashboard/map");
+      revalidatePath("/admin");
+      revalidatePath("/admin/reports");
+      revalidatePath("/admin/map");
+      revalidatePath("/staff");
+      revalidatePath("/staff/incidents");
+      revalidatePath("/staff/map");
+    } catch {
+      // Ignored outside Next.js request context (e.g. testing)
+    }
 
     return {
       success: true,

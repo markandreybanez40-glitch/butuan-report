@@ -7,11 +7,9 @@ import {
   LayoutDashboard,
   FileText,
   PlusCircle,
-  Home,
-  User,
-  ShieldAlert,
-  Bell,
   Compass,
+  Bell,
+  User,
 } from "lucide-react";
 import {
   Sidebar,
@@ -22,17 +20,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 
 interface ResidentSidebarProps {
   userEmail?: string;
   userName?: string;
-  userRole?: string;
 }
 
-export function ResidentSidebar({ userEmail, userName, userRole }: ResidentSidebarProps) {
+export function ResidentSidebar({ userEmail, userName }: ResidentSidebarProps) {
   const pathname = usePathname();
 
   const navItems = [
@@ -70,7 +66,7 @@ export function ResidentSidebar({ userEmail, userName, userRole }: ResidentSideb
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/80">
-      {/* Sidebar Header */}
+      {/* Resident Sidebar Header */}
       <SidebarHeader className="border-b border-border/60 p-4">
         <Link href="/dashboard" className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
@@ -81,15 +77,15 @@ export function ResidentSidebar({ userEmail, userName, userRole }: ResidentSideb
               Butuan Report
             </span>
             <div className="flex items-center gap-1.5 mt-1">
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 uppercase tracking-wider font-semibold">
-                Resident
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 uppercase tracking-wider font-semibold border-primary/30 text-primary bg-primary/5">
+                Resident Portal
               </Badge>
             </div>
           </div>
         </Link>
       </SidebarHeader>
 
-      {/* Sidebar Navigation */}
+      {/* Resident Navigation - Only 5 items */}
       <SidebarContent className="px-2 py-4">
         <SidebarMenu>
           {navItems.map((item) => {
@@ -109,53 +105,12 @@ export function ResidentSidebar({ userEmail, userName, userRole }: ResidentSideb
             );
           })}
         </SidebarMenu>
-
-        <SidebarSeparator className="my-4" />
-
-        <SidebarMenu>
-          {userRole === "admin" && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link href="/admin" />}
-                tooltip="Admin Command Center"
-                className="text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700"
-              >
-                <ShieldAlert className="size-4 text-purple-600" />
-                <span>Admin Panel</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-
-          {userRole && userRole !== "resident" && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link href="/staff" />}
-                tooltip="Staff Operations"
-                className="text-amber-600 dark:text-amber-400 font-semibold hover:text-amber-700"
-              >
-                <ShieldAlert className="size-4 text-amber-500" />
-                <span>Staff Operations</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/" />}
-              tooltip="Public Portal"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Home className="size-4" />
-              <span>Return to Home</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
       </SidebarContent>
 
-      {/* Sidebar Footer */}
+      {/* Resident Footer */}
       <SidebarFooter className="border-t border-border/60 p-3">
         <div className="flex items-center gap-3 px-1 group-data-[collapsible=icon]:hidden">
-          <div className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
             <User className="size-4" />
           </div>
           <div className="flex flex-col min-w-0 flex-1">

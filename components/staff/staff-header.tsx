@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { ListFilter, Compass } from "lucide-react";
+import { ListFilter } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -18,9 +18,9 @@ interface StaffHeaderProps {
 }
 
 export function StaffHeader({
-  title = "Operations Center",
+  title = "Responder Operations",
   subtitle,
-  role = "dispatcher",
+  role = "responder",
 }: StaffHeaderProps) {
   const roleBadgeConfig = {
     dispatcher: {
@@ -28,7 +28,7 @@ export function StaffHeader({
       className: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300/40 dark:border-amber-800/50",
     },
     responder: {
-      label: "Responder",
+      label: "Field Responder",
       className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300/40 dark:border-emerald-800/50",
     },
     admin: {
@@ -67,17 +67,6 @@ export function StaffHeader({
 
       <div className="flex items-center gap-2.5 sm:gap-3">
         <Link
-          href="/staff/map"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "rounded-full shadow-2xs gap-1.5 hidden md:inline-flex text-xs"
-          )}
-        >
-          <Compass className="size-3.5" />
-          <span>Incident Map</span>
-        </Link>
-
-        <Link
           href="/staff/incidents"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
@@ -85,7 +74,7 @@ export function StaffHeader({
           )}
         >
           <ListFilter className="size-3.5" />
-          <span>Incident Queue</span>
+          <span>Assigned Reports</span>
         </Link>
 
         <NotificationBell role={role} />

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
 import {
   Plus,
@@ -25,9 +26,33 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardOverviewPage() {
+interface DashboardOverviewPageProps {
+  searchParams?: Promise<{
+    view?: string;
+  }>;
+}
+
+export default async function DashboardOverviewPage({ searchParams }: DashboardOverviewPageProps) {
   const user = await currentUser();
   const profile = await getCurrentProfile();
+
+  const params = searchParams ? await searchParams : {};
+
+  // If user is administrator and hasn't explicitly chosen resident preview, route them to Admin Command Center
+  if (profile?.role === "admin" && params?.view !== "resident") {
+    redirect("/admin");
+  }
+
+  // If user is dispatcher, route to Dispatcher Workspace
+  if (profile?.role === "dispatcher" && params?.view !== "resident") {
+    redirect("/dispatcher");
+  }
+
+  // If user is responder, route to Responder Workspace
+  if (profile?.role === "responder" && params?.view !== "resident") {
+    redirect("/staff");
+  }
+
   const stats = await getResidentIncidentStats();
   const recentReports = await getMyIncidents({ limit: 5 });
   const notifications = await getMyNotifications(4);

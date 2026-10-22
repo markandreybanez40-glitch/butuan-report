@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
+  Search,
   X,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,9 +50,14 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+
   // Dialog States
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const [confirmToggleDept, setConfirmToggleDept] = useState<Department | null>(null);
 
   // Form States
   const [name, setName] = useState("");
@@ -132,29 +139,48 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
     });
   };
 
-  const handleToggleStatus = (dept: Department) => {
+  const handleConfirmToggleStatus = () => {
+    if (!confirmToggleDept) return;
     setFeedbackError(null);
+
     const formData = new FormData();
-    formData.append("department_id", dept.id);
-    formData.append("is_active", String(dept.is_active));
+    formData.append("department_id", confirmToggleDept.id);
+    formData.append("is_active", String(confirmToggleDept.is_active));
 
     startTransition(async () => {
       const result = await toggleDepartmentStatusAction(formData);
       if (!result.success) {
         setFeedbackError(result.error || "Failed to update status");
       } else {
-        const nextStatus = !dept.is_active ? "activated" : "deactivated";
-        setFeedbackSuccess(`Department "${dept.name}" has been ${nextStatus}.`);
+        const nextStatus = !confirmToggleDept.is_active ? "activated" : "deactivated";
+        setFeedbackSuccess(`Department "${confirmToggleDept.name}" has been ${nextStatus}.`);
+        setConfirmToggleDept(null);
         router.refresh();
         setTimeout(() => setFeedbackSuccess(null), 4000);
       }
     });
   };
 
+  const filteredDepartments = useMemo(() => {
+    return departments.filter((d) => {
+      const matchesSearch =
+        !searchQuery.trim() ||
+        d.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+        (d.description && d.description.toLowerCase().includes(searchQuery.trim().toLowerCase()));
+
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && d.is_active) ||
+        (statusFilter === "inactive" && !d.is_active);
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [departments, searchQuery, statusFilter]);
+
   const activeCount = departments.filter((d) => d.is_active).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Feedback Messages */}
       {feedbackSuccess && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
@@ -188,11 +214,65 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
         <Button
           onClick={handleOpenAdd}
           size="sm"
-          className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5 self-start sm:self-center"
+          className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5 self-start sm:self-center shadow-xs text-xs font-semibold"
         >
           <Plus className="size-4" />
           <span>Add Department</span>
         </Button>
+      </div>
+
+      {/* Search and Filters Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card p-3 rounded-xl border border-border/70 shadow-xs">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            type="search"
+            aria-label="Search departments"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search departments by name or operational scope..."
+            className="pl-9 pr-8 bg-background h-8 text-xs"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <select
+            value={statusFilter}
+            aria-label="Filter departments by status"
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+            className="h-8 rounded-md border border-input bg-background px-2.5 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+
+          {(searchQuery || statusFilter !== "all") && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("all");
+              }}
+              className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+            >
+              <RotateCcw className="size-3" />
+              <span>Reset</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Departments Table */}
@@ -208,14 +288,16 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {departments.length === 0 ? (
+            {filteredDepartments.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-muted-foreground text-xs">
-                  No departments found. Click &quot;Add Department&quot; above to configure municipal offices.
+                  {departments.length === 0
+                    ? "No departments found. Click 'Add Department' above to configure municipal offices."
+                    : "No departments matching your search or filter criteria."}
                 </TableCell>
               </TableRow>
             ) : (
-              departments.map((d) => {
+              filteredDepartments.map((d) => {
                 const dateStr = new Date(d.created_at).toLocaleDateString("en-PH", {
                   year: "numeric",
                   month: "short",
@@ -227,10 +309,10 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
                     <TableCell className="py-3">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          className={`size-8 rounded-lg flex items-center justify-center shrink-0 border ${
                             d.is_active
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                              : "bg-muted text-muted-foreground"
+                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                              : "bg-muted text-muted-foreground border-border"
                           }`}
                         >
                           <Building2 className="size-4" />
@@ -281,7 +363,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
                       <Button
                         variant={d.is_active ? "ghost" : "outline"}
                         size="xs"
-                        onClick={() => handleToggleStatus(d)}
+                        onClick={() => setConfirmToggleDept(d)}
                         disabled={isPending}
                         className={`h-7 px-2 text-xs gap-1 ${
                           d.is_active
@@ -316,7 +398,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
           <form onSubmit={handleCreateSubmit}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Building2 className="size-5 text-purple-600" />
+                <Building2 className="size-5 text-blue-600 dark:text-blue-400" />
                 <span>Add Municipal Department</span>
               </DialogTitle>
               <DialogDescription>
@@ -371,7 +453,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
                 type="submit"
                 size="sm"
                 disabled={isPending || !name.trim()}
-                className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
               >
                 {isPending ? (
                   <>
@@ -393,7 +475,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
           <form onSubmit={handleUpdateSubmit}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Edit2 className="size-5 text-purple-600" />
+                <Edit2 className="size-5 text-blue-600 dark:text-blue-400" />
                 <span>Edit Department Details</span>
               </DialogTitle>
               <DialogDescription>
@@ -446,7 +528,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
                 type="submit"
                 size="sm"
                 disabled={isPending || !name.trim()}
-                className="bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
               >
                 {isPending ? (
                   <>
@@ -459,6 +541,68 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for Deactivate / Activate */}
+      <Dialog open={!!confirmToggleDept} onOpenChange={(open) => !open && setConfirmToggleDept(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-5 text-amber-500" />
+              <span>Confirm Status Change</span>
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to {confirmToggleDept?.is_active ? "deactivate" : "activate"}{" "}
+              <strong className="text-foreground">{confirmToggleDept?.name}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-xs text-muted-foreground">
+            {confirmToggleDept?.is_active ? (
+              <p>
+                Deactivating this department will remove it from dispatch dropdowns for new incident
+                assignments. Existing reports assigned to this department remain intact.
+              </p>
+            ) : (
+              <p>
+                Activating this department will make it immediately selectable in dispatch and routing
+                workflows across the city.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmToggleDept(null)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleConfirmToggleStatus}
+              disabled={isPending}
+              className={
+                confirmToggleDept?.is_active
+                  ? "bg-amber-600 hover:bg-amber-700 text-white"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin mr-1" />
+                  <span>Updating...</span>
+                </>
+              ) : (
+                <span>Confirm {confirmToggleDept?.is_active ? "Deactivate" : "Activate"}</span>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

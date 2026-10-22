@@ -123,9 +123,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
@@ -149,4 +151,95 @@
 .leaflet-container {
   font-family: inherit !important;
   background-color: var(--muted) !important;
+}
+
+/* Dark mode tile invert filter to seamlessly blend with dark mode */
+.dark .leaflet-tile {
+  filter: brightness(0.7) invert(1) contrast(2.6) hue-rotate(200deg) saturate(0.3) brightness(0.85);
+}
+
+.dark .leaflet-container {
+  background-color: hsl(var(--card)) !important;
+}
+
+/* ==========================================================================
+   Print-Friendly Styles for Municipal Incident Reports
+   ========================================================================== */
+@media print {
+  /* Hide all interactive navigation, sidebar, header, and filter chrome */
+  aside,
+  nav,
+  header,
+  footer,
+  button,
+  .no-print,
+  [data-sidebar],
+  [data-sidebar="sidebar"],
+  .sidebar-trigger,
+  [role="dialog"] button {
+    display: none !important;
+  }
+
+  /* Reset body and container backgrounds for clean printing */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Unconstrain widths and remove shadows */
+  main,
+  .print-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Display printable document */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Prevent page-breaks in the middle of tables, cards, and signature blocks */
+  .print-avoid-break,
+  tr,
+  figure,
+  .print-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Clean print table styling */
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 6px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .print-table th,
+  .print-table td {
+    border: 1px solid #d1d5db !important;
+    padding: 6px 8px !important;
+    text-align: left !important;
+    color: #000000 !important;
+    font-size: 9pt !important;
+  }
+
+  .print-table th {
+    background-color: #f3f4f6 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    font-size: 8pt !important;
+    letter-spacing: 0.05em !important;
+  }
 }

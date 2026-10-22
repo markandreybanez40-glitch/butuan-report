@@ -18,18 +18,20 @@ interface IncidentsMapProps {
   incidents: MapIncidentItem[];
   role?: UserRole | "resident" | "staff" | "admin";
   height?: string;
+  highlightIncidentId?: string | null;
 }
 
 export function IncidentsMap({
   incidents,
   role = "resident",
   height = "h-[500px]",
+  highlightIncidentId,
 }: IncidentsMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
 
-  // Filter incidents with valid GPS coordinates
+  // Filter incidents with valid GPS coordinates strictly
   const validIncidents = incidents.filter(
     (inc) =>
       typeof inc.latitude === "number" &&
@@ -42,7 +44,7 @@ export function IncidentsMap({
       inc.longitude <= 180
   );
 
-  const createMarkerIcon = (severity: string, status: string) => {
+  const createMarkerIcon = (severity: string, status: string, isHighlighted: boolean) => {
     let colorClass = "bg-primary text-primary-foreground ring-primary/40";
 
     if (severity === "critical" || status === "rejected") {
@@ -57,12 +59,14 @@ export function IncidentsMap({
       colorClass = "bg-blue-500 text-white ring-blue-200 dark:ring-blue-900";
     }
 
+    const ringScale = isHighlighted ? "ring-4 ring-offset-2 ring-primary scale-125 z-50" : "ring-4";
+
     return L.divIcon({
       className: "incident-leaflet-marker",
       html: `
         <div class="relative flex items-center justify-center">
           <span class="absolute size-7 rounded-full ${colorClass} opacity-30 animate-ping"></span>
-          <div class="relative size-8 rounded-full ${colorClass} ring-4 flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform cursor-pointer">
+          <div class="relative size-8 rounded-full ${colorClass} ${ringScale} flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform cursor-pointer">
             <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -108,17 +112,25 @@ export function IncidentsMap({
 
     markersGroupRef.current.clearLayers();
     const bounds: L.LatLngBounds = L.latLngBounds([]);
+    let targetedMarker: L.Marker | null = null;
 
-    validIncidents.forEach((inc) => {
+    for (const inc of validIncidents) {
       const lat = inc.latitude!;
       const lng = inc.longitude!;
       const latLng: [number, number] = [lat, lng];
       bounds.extend(latLng);
 
-      const targetPath =
-        role === "staff" || role === "dispatcher" || role === "responder" || role === "admin"
-          ? `/staff/incidents/${inc.id}`
-          : `/dashboard/reports/${inc.id}`;
+      const isTargeted = highlightIncidentId === inc.id;
+
+      // Determine correct role-based URL
+      let targetPath = `/dashboard/reports/${inc.id}`;
+      if (role === "admin") {
+        targetPath = `/admin/reports/${inc.id}`;
+      } else if (role === "dispatcher") {
+        targetPath = `/dispatcher/reports/${inc.id}`;
+      } else if (role === "staff" || role === "responder") {
+        targetPath = `/staff/incidents/${inc.id}`;
+      }
 
       const formattedDate = new Date(inc.created_at).toLocaleDateString(undefined, {
         month: "short",
@@ -149,7 +161,7 @@ export function IncidentsMap({
             <span>${formattedDate}</span>
           </div>
 
-          <div class="pt-2 border-t border-border/60">
+          <div class="pt-2 border-t border-border/60 flex items-center gap-2">
             <a href="${targetPath}" class="inline-flex items-center justify-center w-full rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 transition-colors text-center text-white text-decoration-none">
               View Details &rarr;
             </a>
@@ -158,18 +170,26 @@ export function IncidentsMap({
       `;
 
       const marker = L.marker(latLng, {
-        icon: createMarkerIcon(inc.severity, inc.status),
+        icon: createMarkerIcon(inc.severity, inc.status, isTargeted),
+        zIndexOffset: isTargeted ? 1000 : 0,
       }).bindPopup(popupContent);
 
       markersGroupRef.current?.addLayer(marker);
-    });
 
-    if (validIncidents.length > 0 && mapInstanceRef.current) {
+      if (isTargeted) {
+        targetedMarker = marker;
+      }
+    }
+
+    if (targetedMarker && mapInstanceRef.current) {
+      mapInstanceRef.current.setView(targetedMarker.getLatLng(), 16);
+      targetedMarker.openPopup();
+    } else if (validIncidents.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     } else if (mapInstanceRef.current) {
       mapInstanceRef.current.setView(DEFAULT_BUTUAN_CENTER, 13);
     }
-  }, [validIncidents, role]);
+  }, [validIncidents, role, highlightIncidentId]);
 
   return (
     <div className="relative w-full rounded-2xl border border-border/80 shadow-md overflow-hidden bg-card">

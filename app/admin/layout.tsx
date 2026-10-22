@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@clerk/nextjs/server";
-import { getCurrentProfile } from "@/lib/data/profiles";
+import { getOrCreateCurrentProfile } from "@/lib/data/profiles";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
@@ -17,13 +17,26 @@ export default async function AdminLayout({
   const user = await currentUser();
 
   if (!user) {
-    redirect("/admin/sign-in?redirect_url=/admin");
+    redirect("/sign-in?redirect_url=/admin");
   }
 
-  const profile = await getCurrentProfile();
+  // Ensure user profile exists in database
+  const profile = await getOrCreateCurrentProfile();
 
   // Strict Server-Side Authorization: ONLY 'admin' role is permitted
-  if (!profile || profile.role !== "admin") {
+  if (!profile) {
+    redirect("/sign-in?redirect_url=/admin");
+  }
+
+  if (profile.role === "dispatcher") {
+    redirect("/dispatcher");
+  }
+
+  if (profile.role === "responder") {
+    redirect("/staff");
+  }
+
+  if (profile.role === "resident") {
     redirect("/dashboard");
   }
 

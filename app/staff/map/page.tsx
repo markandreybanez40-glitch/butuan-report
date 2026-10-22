@@ -13,11 +13,19 @@ export const metadata: Metadata = {
   description: "Municipal operations map for incident tracking, dispatching, and resolution.",
 };
 
-export default async function StaffMapPage() {
+interface StaffMapPageProps {
+  searchParams: Promise<{
+    reportId?: string;
+  }>;
+}
+
+export default async function StaffMapPage({ searchParams }: StaffMapPageProps) {
   const profile = await getCurrentProfile();
   if (!profile || profile.role === "resident") {
     redirect("/dashboard");
   }
+
+  const { reportId } = (await searchParams) || {};
 
   const [incidents, categories] = await Promise.all([
     getStaffIncidentQueue(profile, { limit: 200 }),
@@ -41,7 +49,12 @@ export default async function StaffMapPage() {
         </p>
       </div>
 
-      <StaffMapView incidents={incidents} categories={categories} userRole={profile.role as import("@/types").UserRole} />
+      <StaffMapView
+        incidents={incidents}
+        categories={categories}
+        userRole={profile.role as import("@/types").UserRole}
+        highlightIncidentId={reportId}
+      />
     </div>
   );
 }

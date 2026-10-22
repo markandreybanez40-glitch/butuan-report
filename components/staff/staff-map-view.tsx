@@ -26,9 +26,15 @@ interface StaffMapViewProps {
   incidents: StaffIncidentListItem[];
   categories: IncidentCategory[];
   userRole: UserRole;
+  highlightIncidentId?: string | null;
 }
 
-export function StaffMapView({ incidents, categories, userRole }: StaffMapViewProps) {
+export function StaffMapView({
+  incidents,
+  categories,
+  userRole,
+  highlightIncidentId,
+}: StaffMapViewProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -184,7 +190,12 @@ export function StaffMapView({ incidents, categories, userRole }: StaffMapViewPr
       </Card>
 
       {/* Interactive Map */}
-      <IncidentsMap incidents={filteredIncidents} role={userRole} height="h-[560px]" />
+      <IncidentsMap
+        incidents={filteredIncidents}
+        role={userRole}
+        height="h-[560px]"
+        highlightIncidentId={highlightIncidentId}
+      />
     </div>
   );
 }

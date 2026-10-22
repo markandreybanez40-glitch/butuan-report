@@ -1,253 +1,211 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
   Clock,
   CheckCircle2,
   Users,
-  Building2,
-  Tags,
-  ScrollText,
-  ArrowRight,
-  Activity,
+  Eye,
 } from "lucide-react";
+import { getCurrentProfile } from "@/lib/data/profiles";
 import { getAdminDashboardStats } from "@/lib/data/admin";
+import { getActiveCategories } from "@/lib/data/categories";
+import { getStaffIncidentPaginatedQueue } from "@/lib/data/staff";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ReportsStatusChart } from "@/components/admin/reports-status-chart";
+import { DashboardRecentReports } from "@/components/admin/dashboard-recent-reports";
+
+interface AdminDashboardPageProps {
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    category?: string;
+    page?: string;
+  }>;
+}
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Admin Dashboard | Butuan Report",
-  description: "Municipal operations overview, KPIs, and audit feed",
+  description: "Executive oversight, incident triage, and management for Butuan City",
 };
 
-export default async function AdminDashboardPage() {
-  const stats = await getAdminDashboardStats();
+export default async function AdminDashboardPage({ searchParams }: AdminDashboardPageProps) {
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "admin") {
+    redirect("/dashboard");
+  }
+
+  const { q, status, category, page } = await searchParams;
+  const currentPage = parseInt(page || "1", 10) || 1;
+  const pageSize = 6;
+
+  const [stats, categories, queueResult] = await Promise.all([
+    getAdminDashboardStats(),
+    getActiveCategories(),
+    getStaffIncidentPaginatedQueue(profile, {
+      search: q,
+      status,
+      categoryId: category,
+      page: currentPage,
+      pageSize,
+    }),
+  ]);
 
   return (
     <>
       <AdminHeader
-        title="Administrative Command Center"
-        subtitle="Executive oversight of incidents, staff access, and municipal configurations"
+        title="Dashboard"
+        subtitle="Executive administrative overview and municipal service monitoring"
       />
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
-        {/* KPI Summary Cards */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {/* Total Incidents */}
+        {/* 5 KPI Cards: Total Reports, Pending Reports, Under Review, Resolved Reports, Registered Residents */}
+        <section
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4"
+          aria-label="Civic Incident KPIs"
+        >
+          {/* 1. Total Reports */}
           <Link href="/admin/reports" className="block group">
-            <Card className="border-border/70 shadow-2xs group-hover:border-purple-500/50 transition-colors h-full">
+            <Card className="border-border/70 shadow-2xs group-hover:border-blue-500/50 group-hover:shadow-xs transition-all h-full">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-purple-600 transition-colors">
-                  Total Incidents
+                <CardTitle className="text-xs font-semibold text-muted-foreground group-hover:text-blue-600 transition-colors">
+                  Total Reports
                 </CardTitle>
-                <FileText className="size-4 text-purple-600" />
+                <div className="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                  <FileText className="size-4" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">{stats.totalIncidents}</div>
-                <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center justify-between">
-                  <span>All-time reports</span>
-                  <span className="text-purple-600 font-medium">Manage &rarr;</span>
+                <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
+                  {stats.totalReports}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+                  <span>All-time filings</span>
+                  <span className="text-blue-600 font-medium">View &rarr;</span>
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          {/* Open / In-Progress */}
-          <Link href="/admin/reports?status=submitted,under_review,assigned,in_progress" className="block group">
-            <Card className="border-border/70 shadow-2xs group-hover:border-amber-500/50 transition-colors h-full">
+          {/* 2. Pending Reports */}
+          <Link href="/admin/reports?status=submitted" className="block group">
+            <Card className="border-border/70 shadow-2xs group-hover:border-amber-500/50 group-hover:shadow-xs transition-all h-full">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-amber-600 transition-colors">
-                  Active Operations
+                <CardTitle className="text-xs font-semibold text-muted-foreground group-hover:text-amber-600 transition-colors">
+                  Pending Reports
                 </CardTitle>
-                <Clock className="size-4 text-amber-500" />
+                <div className="size-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                  <Clock className="size-4" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                  {stats.openIncidents}
+                <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400">
+                  {stats.pendingReports}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center justify-between">
-                  <span>Pending triage/dispatch</span>
-                  <span className="text-amber-600 font-medium">Review &rarr;</span>
+                <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+                  <span>Awaiting triage</span>
+                  <span className="text-amber-600 font-medium">Triage &rarr;</span>
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          {/* Resolved */}
-          <Link href="/admin/reports?status=resolved,closed" className="block group">
-            <Card className="border-border/70 shadow-2xs group-hover:border-emerald-500/50 transition-colors h-full">
+          {/* 3. Under Review */}
+          <Link href="/admin/reports?status=under_review" className="block group">
+            <Card className="border-border/70 shadow-2xs group-hover:border-sky-500/50 group-hover:shadow-xs transition-all h-full">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-emerald-600 transition-colors">
-                  Resolved & Closed
+                <CardTitle className="text-xs font-semibold text-muted-foreground group-hover:text-sky-600 transition-colors">
+                  Under Review
                 </CardTitle>
-                <CheckCircle2 className="size-4 text-emerald-500" />
+                <div className="size-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                  <Eye className="size-4" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {stats.resolvedIncidents}
+                <div className="text-2xl sm:text-3xl font-extrabold text-sky-600 dark:text-sky-400">
+                  {stats.underReview}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Completed resolutions
+                <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+                  <span>Being assessed</span>
+                  <span className="text-sky-600 font-medium">Review &rarr;</span>
                 </p>
               </CardContent>
             </Card>
           </Link>
 
-          {/* Active Staff / Users */}
-          <Link href="/admin/users" className="block group">
-            <Card className="border-border/70 shadow-2xs group-hover:border-blue-500/50 transition-colors h-full">
+          {/* 4. Resolved Reports */}
+          <Link href="/admin/reports?status=resolved" className="block group">
+            <Card className="border-border/70 shadow-2xs group-hover:border-emerald-500/50 group-hover:shadow-xs transition-all h-full">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs font-medium text-muted-foreground group-hover:text-blue-600 transition-colors">
-                  Staff & Citizens
+                <CardTitle className="text-xs font-semibold text-muted-foreground group-hover:text-emerald-600 transition-colors">
+                  Resolved Reports
                 </CardTitle>
-                <Users className="size-4 text-blue-500" />
+                <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="size-4" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">
-                  {stats.totalStaff}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    / {stats.totalUsers} total
-                  </span>
+                <div className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                  {stats.resolved}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Responders & Admins
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Completed actions
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* 5. Registered Residents */}
+          <Link href="/admin/users" className="block group col-span-2 sm:col-span-1">
+            <Card className="border-border/70 shadow-2xs group-hover:border-blue-500/50 group-hover:shadow-xs transition-all h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs font-semibold text-muted-foreground group-hover:text-blue-600 transition-colors">
+                  Registered Residents
+                </CardTitle>
+                <div className="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                  <Users className="size-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl sm:text-3xl font-extrabold text-foreground">
+                  {stats.totalResidents}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+                  <span>Verified citizens</span>
+                  <span className="text-blue-600 font-medium">Manage &rarr;</span>
                 </p>
               </CardContent>
             </Card>
           </Link>
         </section>
 
-        {/* Administration Hub Quick Navigation */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Link
-            href="/admin/users"
-            className="group rounded-xl border border-border/80 bg-card p-4 hover:border-purple-500/50 hover:shadow-xs transition-all space-y-2 block"
-          >
-            <div className="size-8 rounded-lg bg-purple-500/10 text-purple-600 flex items-center justify-center">
-              <Users className="size-4" />
-            </div>
-            <h3 className="text-sm font-bold text-foreground group-hover:text-purple-600 transition-colors flex items-center justify-between">
-              <span>User Authorization</span>
-              <ArrowRight className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Authorize staff roles (responders, dispatchers, admins) and inspect resident accounts.
-            </p>
-          </Link>
-
-          <Link
-            href="/admin/departments"
-            className="group rounded-xl border border-border/80 bg-card p-4 hover:border-purple-500/50 hover:shadow-xs transition-all space-y-2 block"
-          >
-            <div className="size-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-              <Building2 className="size-4" />
-            </div>
-            <h3 className="text-sm font-bold text-foreground group-hover:text-blue-600 transition-colors flex items-center justify-between">
-              <span>Departments</span>
-              <ArrowRight className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Manage {stats.activeDepartments} municipal offices (CDRRMO, CEO, City ENRO, CHO, CGSO).
-            </p>
-          </Link>
-
-          <Link
-            href="/admin/categories"
-            className="group rounded-xl border border-border/80 bg-card p-4 hover:border-purple-500/50 hover:shadow-xs transition-all space-y-2 block"
-          >
-            <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <Tags className="size-4" />
-            </div>
-            <h3 className="text-sm font-bold text-foreground group-hover:text-emerald-600 transition-colors flex items-center justify-between">
-              <span>Categories</span>
-              <ArrowRight className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Configure {stats.activeCategories} public reporting hazard types and classification rules.
-            </p>
-          </Link>
-
-          <Link
-            href="/admin/audit-logs"
-            className="group rounded-xl border border-border/80 bg-card p-4 hover:border-purple-500/50 hover:shadow-xs transition-all space-y-2 block"
-          >
-            <div className="size-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
-              <ScrollText className="size-4" />
-            </div>
-            <h3 className="text-sm font-bold text-foreground group-hover:text-amber-600 transition-colors flex items-center justify-between">
-              <span>Audit Logs</span>
-              <ArrowRight className="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Immutable, append-only security logs for role updates and master data changes.
-            </p>
-          </Link>
-        </section>
-
-        {/* Recent Audit Activity */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Recent Security & Operational Audit Log</h3>
-              <p className="text-xs text-muted-foreground">
-                Append-only record of administrative actions and system modifications
-              </p>
-            </div>
-            <Link
-              href="/admin/audit-logs"
-              className="text-xs font-semibold text-purple-600 hover:underline flex items-center gap-1"
-            >
-              <span>View Full Audit Trail</span>
-              <ArrowRight className="size-3" />
-            </Link>
+        {/* Below Cards: Reports Overview (Chart) & Recent Reports (Table) */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Reports Overview Chart (5 cols on lg) */}
+          <div className="lg:col-span-5">
+            <ReportsStatusChart
+              total={stats.totalReports}
+              resolved={stats.resolved}
+              inProgress={stats.inProgress}
+              underReview={stats.underReview}
+              rejected={stats.rejected}
+            />
           </div>
 
-          {stats.recentActivity.length === 0 ? (
-            <Card className="border-dashed p-8 text-center">
-              <p className="text-xs text-muted-foreground">
-                No administrative actions or audit records logged yet.
-              </p>
-            </Card>
-          ) : (
-            <div className="rounded-xl border border-border/70 bg-card divide-y divide-border/60 overflow-hidden shadow-2xs">
-              {stats.recentActivity.map((log) => {
-                const dateStr = new Date(log.created_at).toLocaleDateString("en-PH", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
-
-                return (
-                  <div key={log.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="size-7 rounded-full bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
-                        <Activity className="size-3.5" />
-                      </div>
-                      <div className="truncate">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">
-                            {log.action.toUpperCase().replace(/_/g, " ")}
-                          </span>
-                          <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-mono">
-                            {log.entity_type}
-                          </Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          Actor: <strong>{log.actor?.full_name || "System"}</strong> ({log.actor?.role || "SYSTEM"})
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0 self-start sm:self-center font-mono">
-                      {dateStr}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* Recent Reports Table (7 cols on lg) */}
+          <div className="lg:col-span-7">
+            <DashboardRecentReports
+              incidents={queueResult.incidents}
+              categories={categories}
+              totalCount={queueResult.totalCount}
+              currentPage={queueResult.page}
+              pageSize={queueResult.pageSize}
+              totalPages={queueResult.totalPages}
+            />
+          </div>
         </section>
       </main>
     </>

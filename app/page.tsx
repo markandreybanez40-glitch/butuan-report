@@ -513,7 +513,7 @@ export default async function HomePage() {
                 </li>
                 <li>
                   <Link href="/sign-in" className="hover:text-foreground transition-colors font-medium text-primary">
-                    Resident Sign In
+                    Sign In
                   </Link>
                 </li>
                 <li>

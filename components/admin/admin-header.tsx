@@ -1,14 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { ScrollText, Users } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { buttonVariants } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface AdminHeaderProps {
   title?: string;
@@ -16,7 +12,7 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({
-  title = "System Administration",
+  title = "Administrative Workspace",
   subtitle,
 }: AdminHeaderProps) {
   return (
@@ -25,14 +21,14 @@ export function AdminHeader({
         <SidebarTrigger className="-ml-1" />
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-semibold tracking-tight text-foreground sm:text-base leading-none">
+            <h1 className="text-sm font-bold tracking-tight text-foreground sm:text-base leading-none">
               {title}
             </h1>
             <Badge
               variant="outline"
-              className="text-[10px] px-1.5 py-0 uppercase tracking-wider font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300/40 dark:border-purple-800/50 hidden sm:inline-flex"
+              className="text-[10px] px-2 py-0.5 uppercase tracking-wider font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300/40 dark:border-blue-800/50 hidden sm:inline-flex"
             >
-              Admin Panel
+              City of Butuan
             </Badge>
           </div>
           {subtitle && (
@@ -44,33 +40,11 @@ export function AdminHeader({
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-3">
-        <Link
-          href="/admin/users"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "rounded-full shadow-xs gap-1.5 hidden md:inline-flex text-xs"
-          )}
-        >
-          <Users className="size-3.5" />
-          <span>Users</span>
-        </Link>
-
-        <Link
-          href="/admin/audit-logs"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "rounded-full shadow-xs gap-1.5 hidden sm:inline-flex text-xs"
-          )}
-        >
-          <ScrollText className="size-3.5" />
-          <span>Audit Logs</span>
-        </Link>
-
         <NotificationBell role="admin" />
 
         <ThemeToggle />
 
-        <div className="flex items-center ml-1">
+        <div className="flex items-center pl-1 border-l border-border/60">
           <UserButton />
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { AdminHeader } from "@/components/admin/admin-header";
 import { NotificationsView } from "@/components/notifications/notifications-view";
 
 export const dynamic = "force-dynamic";
@@ -10,12 +11,18 @@ export const metadata: Metadata = {
 
 export default function AdminNotificationsPage() {
   return (
-    <div className="container mx-auto max-w-5xl py-6 px-4 sm:px-6">
-      <NotificationsView
-        role="admin"
+    <>
+      <AdminHeader
         title="Admin Notifications"
         subtitle="System alerts, incident dispatch notifications, and operational activity summaries."
       />
-    </div>
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto">
+        <NotificationsView
+          role="admin"
+          title="Admin Notifications"
+          subtitle="System alerts, incident dispatch notifications, and operational activity summaries."
+        />
+      </main>
+    </>
   );
 }

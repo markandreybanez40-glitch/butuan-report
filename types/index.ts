@@ -23,6 +23,42 @@ export type IncidentStatus =
 
 export type UpdateVisibility = 'public' | 'internal';
 
+// Controlled Field Responders (Responder 1–5)
+export const FIELD_RESPONDERS = [
+  'Responder 1',
+  'Responder 2',
+  'Responder 3',
+  'Responder 4',
+  'Responder 5',
+] as const;
+
+export type FieldResponder = (typeof FIELD_RESPONDERS)[number];
+
+// Controlled Internal Dispatch Instructions
+export const DISPATCH_INSTRUCTIONS = [
+  'Inspect Incident Location',
+  'Assess Incident Severity',
+  'Secure the Affected Area',
+  'Provide Immediate Assistance',
+  'Coordinate With Relevant Department',
+  'Prepare Required Equipment',
+  'Follow Up on Incident',
+  'Verify Incident Resolution',
+] as const;
+
+export type DispatchInstruction = (typeof DISPATCH_INSTRUCTIONS)[number];
+
+// Controlled Dispatch Vehicles (Vehicle 1–5)
+export const DISPATCH_VEHICLES = [
+  'Vehicle 1',
+  'Vehicle 2',
+  'Vehicle 3',
+  'Vehicle 4',
+  'Vehicle 5',
+] as const;
+
+export type DispatchVehicle = (typeof DISPATCH_VEHICLES)[number];
+
 // Strongly typed table entities for application use
 export type Profile = Tables<'profiles'>;
 export type ProfileInsert = TablesInsert<'profiles'>;

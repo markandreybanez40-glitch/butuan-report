@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Clock,
-  Compass,
   FileText,
   Lock,
   MapPin,
@@ -28,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { IncidentDetailMapView } from "@/components/map/incident-detail-map-view";
 import type { UserRole, IncidentStatus } from "@/types";
 
 interface StaffIncidentDetailPageProps {
@@ -222,23 +222,29 @@ export default async function StaffIncidentDetailPage({ params }: StaffIncidentD
                   </div>
                 )}
 
-                {incident.latitude != null && incident.longitude != null && (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                    <div className="flex items-center gap-2 font-mono text-xs">
-                      <Compass className="size-4 text-primary shrink-0" />
-                      <span>
-                        GPS: {incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}
-                      </span>
+                {incident.latitude != null && incident.longitude != null ? (
+                  <div className="pt-2">
+                    <IncidentDetailMapView
+                      latitude={incident.latitude}
+                      longitude={incident.longitude}
+                      title={incident.title}
+                      barangay={incident.barangay}
+                      severity={incident.severity}
+                      height="h-[220px] sm:h-[260px]"
+                      viewOnMapHref={`/staff/map?reportId=${incident.id}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="pt-2">
+                    <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-3.5 text-xs text-muted-foreground flex items-start gap-2.5">
+                      <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <p className="font-semibold text-foreground">No GPS Coordinates Pinned</p>
+                        <p className="text-[11px] leading-relaxed">
+                          This report was submitted using descriptive address references without geographic coordinates.
+                        </p>
+                      </div>
                     </div>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${incident.latitude},${incident.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
-                    >
-                      <span>Open in Google Maps</span>
-                      <ExternalLink className="size-3" />
-                    </a>
                   </div>
                 )}
               </CardContent>
@@ -392,6 +398,8 @@ export default async function StaffIncidentDetailPage({ params }: StaffIncidentD
                 staffMembers={staffMembers}
                 currentDepartmentId={activeAssignment?.department_id}
                 currentResponderId={activeAssignment?.assigned_user_id}
+                currentFieldResponder={activeAssignment?.field_responder || null}
+                currentDispatchVehicle={activeAssignment?.dispatch_vehicle || null}
               />
             ) : (
               <Card className="border-border/80 shadow-xs">

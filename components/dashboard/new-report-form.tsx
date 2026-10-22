@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import type { IncidentCategory } from "@/types";
+import type { ReverseGeocodeResult } from "@/lib/geocoding";
 import { BUTUAN_BARANGAYS } from "@/lib/constants/barangays";
 
 const LocationPickerMap = dynamic(
@@ -102,6 +103,7 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Status & UI state
+  const [isDragging, setIsDragging] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitReportResult | null>(null);
@@ -110,9 +112,52 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
   // Selected category helper
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
+  // Address auto-fill from map state
+  const [prevAddressBackup, setPrevAddressBackup] = useState<{
+    barangay: string;
+    streetArea: string;
+    landmark: string;
+  } | null>(null);
+  const [geocodedNotice, setGeocodedNotice] = useState<string | null>(null);
+
+  const handleAddressResolved = (address: ReverseGeocodeResult) => {
+    // Preserve current state for undo
+    setPrevAddressBackup({ barangay, streetArea, landmark });
+
+    if (address.barangay) {
+      setBarangay(address.barangay);
+    }
+    if (address.streetArea) {
+      setStreetArea(address.streetArea);
+    }
+    if (address.landmark) {
+      setLandmark(address.landmark);
+    }
+
+    const parts = [
+      address.barangay ? `Barangay ${address.barangay}` : null,
+      address.streetArea || null,
+    ].filter(Boolean);
+
+    if (parts.length > 0) {
+      setGeocodedNotice(`Address auto-populated from map pin: ${parts.join(", ")}`);
+    }
+  };
+
+  const handleUndoAddressAutoFill = () => {
+    if (prevAddressBackup) {
+      setBarangay(prevAddressBackup.barangay);
+      setStreetArea(prevAddressBackup.streetArea);
+      setLandmark(prevAddressBackup.landmark);
+      setPrevAddressBackup(null);
+      setGeocodedNotice(null);
+    }
+  };
+
   const handleClearLocation = () => {
     setLatitude("");
     setLongitude("");
+    setGeocodedNotice(null);
   };
 
   // Handle File Additions
@@ -186,6 +231,7 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
   // Submit Handler
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isPending) return;
     setErrorMsg(null);
 
     // Basic client validation
@@ -253,6 +299,8 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
     setLandmark("");
     setLatitude("");
     setLongitude("");
+    setPrevAddressBackup(null);
+    setGeocodedNotice(null);
     setAttachments([]);
     setPreviews({});
     setErrorMsg(null);
@@ -385,9 +433,9 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
   return (
     <Card className="border-border/80 shadow-xs">
       <CardHeader>
-        <CardTitle className="text-xl font-bold">New Incident Report</CardTitle>
+        <CardTitle className="text-xl font-bold">Report Details</CardTitle>
         <CardDescription className="text-xs">
-          Provide complete and accurate details to facilitate fast verification and municipal dispatch.
+          Provide complete and accurate incident details, location, and evidence to facilitate fast verification and municipal dispatch.
         </CardDescription>
       </CardHeader>
 
@@ -397,7 +445,15 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3.5 mb-6 text-xs text-destructive dark:text-red-300 flex items-start gap-2.5">
             <AlertTriangle className="size-4 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <strong className="block font-semibold">Validation Error</strong>
+              <strong className="block font-semibold">
+                {errorMsg.toLowerCase().includes("database") ||
+                errorMsg.toLowerCase().includes("permission") ||
+                errorMsg.toLowerCase().includes("failed") ||
+                errorMsg.toLowerCase().includes("error") ||
+                errorMsg.toLowerCase().includes("server")
+                  ? "Submission Error"
+                  : "Validation Notice"}
+              </strong>
               <span>{errorMsg}</span>
             </div>
             <button
@@ -410,7 +466,13 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form
+          id="report-details-form"
+          data-testid="report-details-form"
+          aria-label="Report Details Form"
+          onSubmit={handleSubmit}
+          className="space-y-8"
+        >
           {/* SECTION 1: CLASSIFICATION */}
           <fieldset className="space-y-4">
             <legend className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-2 w-full">
@@ -539,11 +601,165 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
             </div>
           </fieldset>
 
-          {/* SECTION 3: LOCATION & GEOLOCATION */}
-          <fieldset className="space-y-4">
+          {/* SECTION 3: PHOTO & DOCUMENT EVIDENCE */}
+          <fieldset
+            id="photo-document-evidence"
+            data-testid="photo-document-evidence"
+            className="space-y-4"
+          >
             <legend className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-2 w-full">
               <span className="flex items-center justify-center size-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
                 3
+              </span>
+              <span>Photo & Document Evidence</span>
+            </legend>
+
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Attach up to {MAX_FILES} photos or PDFs (max 10 MB per file).
+                </span>
+                <span className="text-xs font-medium text-foreground">
+                  {attachments.length} / {MAX_FILES} attached
+                </span>
+              </div>
+
+              {/* Upload Dropzone */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Upload photo or document evidence"
+                data-testid="evidence-dropzone"
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileInputRef.current?.click();
+                  }
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(true);
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsDragging(false);
+                  if (e.dataTransfer.files) {
+                    handleFilesAdded(e.dataTransfer.files);
+                  }
+                }}
+                className={cn(
+                  "border-2 border-dashed border-border/80 hover:border-primary/50 transition-colors rounded-xl p-6 text-center cursor-pointer bg-muted/10 hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isDragging && "border-primary bg-primary/10 ring-2 ring-primary/20",
+                  attachments.length >= MAX_FILES && "opacity-50 pointer-events-none"
+                )}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/gif,application/pdf"
+                  onChange={(e) => handleFilesAdded(e.target.files)}
+                  className="hidden"
+                />
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <UploadCloud className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">
+                      Click to browse or drag and drop files
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      JPG, PNG, WebP, HEIC, GIF, or PDF (up to 10 MB each)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Attached Files List */}
+              {attachments.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-semibold text-foreground block">
+                    Selected Evidence ({attachments.length}):
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {attachments.map((file, idx) => {
+                      const isImage = file.type.startsWith("image/");
+                      const previewUrl = previews[file.name];
+
+                      return (
+                        <div
+                          key={`${file.name}-${idx}`}
+                          data-testid="evidence-item"
+                          className="flex items-center justify-between p-2.5 rounded-lg border border-border/70 bg-card shadow-2xs gap-2 min-w-0"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {/* Preview or Icon */}
+                            {isImage && previewUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={previewUrl}
+                                alt={file.name}
+                                className="size-10 rounded object-cover shrink-0 border border-border/60 bg-muted"
+                              />
+                            ) : (
+                              <div className="size-10 rounded bg-muted/50 flex items-center justify-center shrink-0 border border-border/60">
+                                {file.type === "application/pdf" ? (
+                                  <FileText className="size-5 text-red-500" />
+                                ) : (
+                                  <ImageIcon className="size-5 text-muted-foreground" />
+                                )}
+                              </div>
+                            )}
+
+                            <div className="min-w-0 truncate">
+                              <p className="text-xs font-medium text-foreground truncate">
+                                {file.name}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {(file.size / 1024).toFixed(1)} KB • {file.type || "file"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            data-testid={`remove-evidence-${idx}`}
+                            onClick={() => handleRemoveFile(idx)}
+                            className="size-7 rounded-full text-muted-foreground hover:text-destructive shrink-0"
+                            aria-label={`Remove ${file.name}`}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </fieldset>
+
+          {/* SECTION 4: LOCATION & GEOLOCATION */}
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-2 w-full">
+              <span className="flex items-center justify-center size-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
+                4
               </span>
               <span>Incident Location</span>
             </legend>
@@ -628,162 +844,42 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
 
               {/* Leaflet Interactive Map Picker */}
               <LocationPickerMap
-                latitude={latitude && !isNaN(parseFloat(latitude)) ? parseFloat(latitude) : null}
-                longitude={longitude && !isNaN(parseFloat(longitude)) ? parseFloat(longitude) : null}
+                latitude={latitude.trim() && !isNaN(parseFloat(latitude)) ? parseFloat(latitude) : null}
+                longitude={longitude.trim() && !isNaN(parseFloat(longitude)) ? parseFloat(longitude) : null}
                 onLocationChange={({ lat, lng }) => {
                   setLatitude(lat.toString());
                   setLongitude(lng.toString());
                 }}
+                onAddressResolved={handleAddressResolved}
+                onClearLocation={handleClearLocation}
                 disabled={isPending}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1">
-                  <label htmlFor="latitude" className="text-[11px] font-medium text-muted-foreground">
-                    Latitude
-                  </label>
-                  <Input
-                    id="latitude"
-                    name="latitude"
-                    type="number"
-                    step="any"
-                    value={latitude}
-                    onChange={(e) => setLatitude(e.target.value)}
-                    placeholder="e.g. 8.9472"
-                    className="bg-card text-xs font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label htmlFor="longitude" className="text-[11px] font-medium text-muted-foreground">
-                    Longitude
-                  </label>
-                  <Input
-                    id="longitude"
-                    name="longitude"
-                    type="number"
-                    step="any"
-                    value={longitude}
-                    onChange={(e) => setLongitude(e.target.value)}
-                    placeholder="e.g. 125.5406"
-                    className="bg-card text-xs font-mono"
-                  />
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          {/* SECTION 4: PHOTO & FILE ATTACHMENTS */}
-          <fieldset className="space-y-4">
-            <legend className="text-sm font-bold text-foreground flex items-center gap-2 border-b border-border/60 pb-2 w-full">
-              <span className="flex items-center justify-center size-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
-                4
-              </span>
-              <span>Photo & Document Evidence</span>
-            </legend>
-
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Attach up to {MAX_FILES} photos or PDFs (max 10 MB per file).
-                </span>
-                <span className="text-xs font-medium text-foreground">
-                  {attachments.length} / {MAX_FILES} attached
-                </span>
-              </div>
-
-              {/* Upload Dropzone */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className={cn(
-                  "border-2 border-dashed border-border/80 hover:border-primary/50 transition-colors rounded-xl p-6 text-center cursor-pointer bg-muted/10 hover:bg-muted/20",
-                  attachments.length >= MAX_FILES && "opacity-50 pointer-events-none"
-                )}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp,image/heic,image/gif,application/pdf"
-                  onChange={(e) => handleFilesAdded(e.target.files)}
-                  className="hidden"
-                />
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                    <UploadCloud className="size-5" />
+              {/* Reverse Geocoding Address Notification with Undo */}
+              {geocodedNotice && (
+                <div className="rounded-xl border border-primary/30 bg-primary/10 p-3 text-xs text-primary flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CheckCircle2 className="size-4 shrink-0 text-primary" />
+                    <span className="truncate">{geocodedNotice}</span>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">
-                      Click to browse or drag and drop files
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      JPG, PNG, WebP, HEIC, GIF, or PDF (up to 10 MB each)
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Attached Files List */}
-              {attachments.length > 0 && (
-                <div className="space-y-2 pt-2">
-                  <span className="text-xs font-semibold text-foreground block">
-                    Selected Evidence ({attachments.length}):
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {attachments.map((file, idx) => {
-                      const isImage = file.type.startsWith("image/");
-                      const previewUrl = previews[file.name];
-
-                      return (
-                        <div
-                          key={`${file.name}-${idx}`}
-                          className="flex items-center justify-between p-2.5 rounded-lg border border-border/70 bg-card shadow-2xs gap-2 min-w-0"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            {/* Preview or Icon */}
-                            {isImage && previewUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={previewUrl}
-                                alt={file.name}
-                                className="size-10 rounded object-cover shrink-0 border border-border/60 bg-muted"
-                              />
-                            ) : (
-                              <div className="size-10 rounded bg-muted/50 flex items-center justify-center shrink-0 border border-border/60">
-                                {file.type === "application/pdf" ? (
-                                  <FileText className="size-5 text-red-500" />
-                                ) : (
-                                  <ImageIcon className="size-5 text-muted-foreground" />
-                                )}
-                              </div>
-                            )}
-
-                            <div className="min-w-0 truncate">
-                              <p className="text-xs font-medium text-foreground truncate">
-                                {file.name}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {(file.size / 1024).toFixed(1)} KB • {file.type || "file"}
-                              </p>
-                            </div>
-                          </div>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveFile(idx)}
-                            className="size-7 rounded-full text-muted-foreground hover:text-destructive shrink-0"
-                            aria-label={`Remove ${file.name}`}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {prevAddressBackup && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleUndoAddressAutoFill}
+                      className="h-7 text-xs px-2.5 text-primary hover:bg-primary/20 shrink-0 gap-1"
+                    >
+                      <RotateCcw className="size-3" />
+                      <span>Undo</span>
+                    </Button>
+                  )}
                 </div>
               )}
+
+              {/* Hidden coordinates populated automatically by map picker */}
+              <input type="hidden" name="latitude" value={latitude} />
+              <input type="hidden" name="longitude" value={longitude} />
             </div>
           </fieldset>
 
@@ -804,6 +900,7 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
               <Button
                 type="submit"
                 size="sm"
+                data-testid="submit-report-button"
                 disabled={isPending}
                 className="rounded-full gap-1.5 shadow-sm px-6 min-w-36"
               >

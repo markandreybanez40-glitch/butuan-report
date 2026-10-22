@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
-import { Shield, UserCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata = {
-  title: "Citizen Sign In | Butuan Report",
+  title: "Sign In | Butuan Report",
   description: "Sign in to Butuan Report to submit and monitor municipal hazard reports",
 };
 
@@ -29,8 +29,8 @@ export default function SignInPage() {
       <main className="max-w-md w-full mx-auto my-6 space-y-6">
         <div className="text-center space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-            <UserCheck className="size-3.5" />
-            Resident & Citizen Access
+            <ShieldCheck className="size-3.5" />
+            Official Portal Access
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
             Sign in to your account
@@ -45,7 +45,6 @@ export default function SignInPage() {
             routing="path"
             path="/sign-in"
             fallbackRedirectUrl="/dashboard"
-            forceRedirectUrl="/dashboard"
             signUpUrl="/sign-up"
             appearance={{
               elements: {
@@ -56,25 +55,6 @@ export default function SignInPage() {
               },
             }}
           />
-        </div>
-
-        {/* Link to Admin Sign-In */}
-        <div className="rounded-xl border border-border/80 bg-card/60 p-4 text-center text-xs text-muted-foreground shadow-2xs space-y-2">
-          <div className="flex items-center justify-center gap-1.5 font-medium text-foreground">
-            <Shield className="size-3.5 text-purple-600 dark:text-purple-400" />
-            <span>Are you a City Official or Administrator?</span>
-          </div>
-          <p className="text-[11px] leading-relaxed">
-            Authorized municipal personnel can access the executive management portal:
-          </p>
-          <div className="pt-1">
-            <Link
-              href="/admin/sign-in"
-              className="inline-flex items-center gap-1 font-semibold text-purple-600 dark:text-purple-400 hover:underline"
-            >
-              Go to Administrator Sign In &rarr;
-            </Link>
-          </div>
         </div>
       </main>
 

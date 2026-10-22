@@ -2,8 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ArrowLeft,
-  Clock,
-  Compass,
   FileText,
   Lock,
   MapPin,
@@ -11,7 +9,6 @@ import {
   ShieldAlert,
   User,
   ExternalLink,
-  Building,
   Activity,
 } from "lucide-react";
 import { getCurrentProfile } from "@/lib/data/profiles";
@@ -20,7 +17,6 @@ import { getActiveDepartments } from "@/lib/data/departments";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { IncidentStatusBadge, IncidentSeverityBadge } from "@/components/dashboard/status-badge";
 import {
-  StatusUpdateForm,
   AssignmentForm,
   AddUpdateForm,
   SeverityUpdateForm,
@@ -29,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { IncidentDetailMapView } from "@/components/map/incident-detail-map-view";
 import type { IncidentStatus, IncidentSeverity } from "@/types";
 
 interface AdminReportDetailPageProps {
@@ -104,7 +101,7 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
         <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-border/60">
           <Link
             href="/admin/reports"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
           >
             <ArrowLeft className="size-3.5" />
             Back to Incident Reports
@@ -152,7 +149,7 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
                 {/* Reporter Information Box */}
                 <div className="rounded-lg border border-border/70 bg-muted/40 p-3.5 space-y-2 text-xs">
                   <div className="flex items-center gap-2 font-semibold text-foreground">
-                    <User className="size-3.5 text-purple-600 dark:text-purple-400" />
+                    <User className="size-3.5 text-blue-600 dark:text-blue-400" />
                     <span>Reporter Information</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-muted-foreground">
@@ -184,7 +181,7 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
-                    <Paperclip className="size-4 text-purple-600 dark:text-purple-400" />
+                    <Paperclip className="size-4 text-blue-600 dark:text-blue-400" />
                     Evidence & Photographic Attachments ({incident.attachments.length})
                   </CardTitle>
                 </div>
@@ -227,7 +224,7 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
                               href={att.signed_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-purple-600 hover:text-purple-700 shrink-0"
+                              className="text-blue-600 hover:text-blue-700 shrink-0"
                               title="View Full Resolution"
                             >
                               <ExternalLink className="size-3" />
@@ -242,48 +239,64 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
             </Card>
 
             {/* Geographic Map & Coordinates */}
-            {incident.latitude !== null && incident.longitude !== null && (
-              <Card className="border-border/80 shadow-2xs">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                      <MapPin className="size-4 text-purple-600 dark:text-purple-400" />
-                      Geographic Location
-                    </CardTitle>
+            <Card className="border-border/80 shadow-2xs">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <MapPin className="size-4 text-blue-600 dark:text-blue-400" />
+                    Geographic Location
+                  </CardTitle>
+                  {incident.latitude !== null && incident.longitude !== null && (
                     <span className="text-xs font-mono text-muted-foreground">
                       {incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}
                     </span>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="rounded-xl border border-border/80 p-3 bg-muted/30 text-xs">
+                  <span className="font-semibold text-foreground">
+                    Barangay {incident.barangay}
+                  </span>
+                  {incident.street_area && (
+                    <p className="text-muted-foreground mt-0.5">Street: {incident.street_area}</p>
+                  )}
+                  {incident.landmark && (
+                    <p className="text-muted-foreground mt-0.5">Landmark: {incident.landmark}</p>
+                  )}
+                </div>
+
+                {incident.latitude !== null && incident.longitude !== null ? (
+                  <div className="pt-1">
+                    <IncidentDetailMapView
+                      latitude={incident.latitude}
+                      longitude={incident.longitude}
+                      title={incident.title}
+                      barangay={incident.barangay}
+                      severity={incident.severity}
+                      height="h-[220px] sm:h-[260px]"
+                      viewOnMapHref={`/admin/map?reportId=${incident.id}`}
+                    />
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="rounded-xl border border-border/80 p-3 bg-muted/30 text-xs flex items-center justify-between">
-                    <div>
-                      <span className="font-semibold text-foreground">
-                        {incident.barangay}
-                      </span>
-                      {incident.landmark && (
-                        <p className="text-muted-foreground">Landmark: {incident.landmark}</p>
-                      )}
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-3.5 text-xs text-muted-foreground flex items-start gap-2.5">
+                    <MapPin className="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="font-semibold text-foreground">No GPS Coordinates Pinned</p>
+                      <p className="text-[11px] leading-relaxed">
+                        This report was submitted using descriptive address references without geographic coordinates.
+                      </p>
                     </div>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${incident.latitude},${incident.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "text-xs gap-1.5")}
-                    >
-                      <Compass className="size-3.5" />
-                      Open Maps
-                    </a>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </CardContent>
+            </Card>
 
             {/* Complete Timeline: Public Updates & Internal Notes */}
             <Card className="border-border/80 shadow-2xs">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Activity className="size-4 text-purple-600 dark:text-purple-400" />
+                  <Activity className="size-4 text-blue-600 dark:text-blue-400" />
                   Incident Progress & Update History ({incident.updates.length})
                 </CardTitle>
                 <CardDescription className="text-xs">
@@ -313,7 +326,7 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
                               "absolute left-2 top-1.5 size-3.5 rounded-full border-2 border-background",
                               isInternal
                                 ? "bg-amber-500"
-                                : "bg-purple-600 dark:bg-purple-400"
+                                : "bg-blue-600 dark:bg-blue-400"
                             )}
                           />
 
@@ -387,55 +400,32 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Lead Responder:</span>
+                  <span className="text-muted-foreground">Field Responder:</span>
                   <span className="font-semibold text-foreground">
-                    {activeAssignment?.assigned_user?.full_name || "Unassigned"}
+                    {activeAssignment?.field_responder || activeAssignment?.assigned_user?.full_name || "Unassigned"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Dispatch Vehicle:</span>
+                  <span className="font-semibold text-foreground">
+                    {activeAssignment?.dispatch_vehicle || "Unassigned"}
                   </span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Form 1: Department & Responder Assignment */}
-            <Card className="border-border/80 shadow-2xs">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Building className="size-4 text-purple-600 dark:text-purple-400" />
-                  Assign Department & Officer
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Route to responsible municipal agency and field responder
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AssignmentForm
-                  incidentId={incident.id}
-                  currentDepartmentId={activeAssignment?.department_id || null}
-                  currentResponderId={activeAssignment?.assigned_user_id || null}
-                  departments={departments}
-                  staffMembers={assignableStaff}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Form 2: Lifecycle Status Change */}
-            <Card className="border-border/80 shadow-2xs">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <Clock className="size-4 text-purple-600 dark:text-purple-400" />
-                  Update Workflow Status
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Advance triage stage or mark incident resolved / closed
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <StatusUpdateForm
-                  incidentId={incident.id}
-                  currentStatus={incident.status as IncidentStatus}
-                  userRole="admin"
-                />
-              </CardContent>
-            </Card>
+            {/* Dispatch & Assignment (Includes Select New Status, Field Responder, Dispatch Vehicle, and Department) */}
+            <AssignmentForm
+              incidentId={incident.id}
+              currentDepartmentId={activeAssignment?.department_id || null}
+              currentResponderId={activeAssignment?.assigned_user_id || null}
+              currentFieldResponder={activeAssignment?.field_responder || null}
+              currentDispatchVehicle={activeAssignment?.dispatch_vehicle || null}
+              currentStatus={incident.status as IncidentStatus}
+              userRole="admin"
+              departments={departments}
+              staffMembers={assignableStaff}
+            />
 
             {/* Form 3: Severity & Priority Adjustment */}
             <SeverityUpdateForm
@@ -447,7 +437,7 @@ export default async function AdminReportDetailPage({ params }: AdminReportDetai
             <Card className="border-border/80 shadow-2xs">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <FileText className="size-4 text-purple-600 dark:text-purple-400" />
+                  <FileText className="size-4 text-blue-600 dark:text-blue-400" />
                   Post Incident Note
                 </CardTitle>
                 <CardDescription className="text-xs">

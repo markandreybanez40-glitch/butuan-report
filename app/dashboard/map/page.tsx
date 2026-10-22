@@ -15,7 +15,15 @@ export const metadata: Metadata = {
   description: "Interactive geographic map of reported incidents across Butuan City",
 };
 
-export default async function ResidentMapPage() {
+interface ResidentMapPageProps {
+  searchParams: Promise<{
+    reportId?: string;
+  }>;
+}
+
+export default async function ResidentMapPage({ searchParams }: ResidentMapPageProps) {
+  const { reportId } = (await searchParams) || {};
+
   const [incidents, categories] = await Promise.all([
     getMyIncidents(),
     getActiveCategories(),
@@ -52,6 +60,7 @@ export default async function ResidentMapPage() {
         <ResidentIncidentMap
           initialIncidents={incidents}
           categories={categories}
+          highlightIncidentId={reportId}
         />
       </main>
     </>
