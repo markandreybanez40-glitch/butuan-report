@@ -1,11 +1,94 @@
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createAdminSupabaseClient } from '../lib/supabase/server';
 import { getActiveDepartments } from '../lib/data/departments';
 import { getAssignableStaff, getFieldRespondersByDepartment } from '../lib/data/staff';
 
+const TEST_CDRRMO_CLERK_ID = 'test_resp_cdrrmo_field_assign';
+const TEST_CEO_CLERK_ID = 'test_resp_ceo_field_assign';
+const TEST_REPORTER_CLERK_ID = 'test_reporter_field_assign';
+
 describe('Field Responder Assignment for Every Department', () => {
   const supabase = createAdminSupabaseClient();
+  let testIncidentId: string;
+  let testIncidentNumber: string;
+  let createdCdrrmoProfileId: string | null = null;
+  let createdCeoProfileId: string | null = null;
+  let createdReporterId: string | null = null;
+
+  before(async () => {
+    const departments = await getActiveDepartments();
+    const cdrrmo = departments.find(d => d.name.toUpperCase().includes('CDRRMO'));
+    assert.ok(cdrrmo, 'CDRRMO department found');
+    const ceo = departments.find(d => d.name.toUpperCase().includes('ENGINEER') || d.name.toUpperCase().includes('CEO'));
+    assert.ok(ceo, 'CEO department found');
+
+    // Ensure CDRRMO responder exists for isolated test run
+    const existingCdrrmo = await getFieldRespondersByDepartment(cdrrmo.id);
+    if (existingCdrrmo.length === 0) {
+      const { data: p1 } = await supabase.from('profiles').insert({
+        clerk_user_id: TEST_CDRRMO_CLERK_ID,
+        full_name: 'Officer Ramon Santos (CDRRMO Test)',
+        role: 'responder',
+        department_id: cdrrmo.id,
+      }).select().single();
+      if (p1) createdCdrrmoProfileId = p1.id;
+    }
+
+    // Ensure CEO responder exists for isolated test run
+    const existingCeo = await getFieldRespondersByDepartment(ceo.id);
+    if (existingCeo.length === 0) {
+      const { data: p2 } = await supabase.from('profiles').insert({
+        clerk_user_id: TEST_CEO_CLERK_ID,
+        full_name: 'Engr. Danilo Cruz (CEO Test)',
+        role: 'responder',
+        department_id: ceo.id,
+      }).select().single();
+      if (p2) createdCeoProfileId = p2.id;
+    }
+
+    // Ensure test reporter profile and isolated test incident
+    const { data: reporter } = await supabase.from('profiles').insert({
+      clerk_user_id: TEST_REPORTER_CLERK_ID,
+      full_name: 'Test Citizen Reporter',
+      role: 'resident',
+      barangay: 'Doongan',
+    }).select().single();
+    assert.ok(reporter, 'Test reporter must be created');
+    createdReporterId = reporter.id;
+
+    const { data: cat } = await supabase.from('incident_categories').select('id').limit(1).single();
+    assert.ok(cat, 'Active category must be found');
+
+    const { data: inc } = await supabase.from('incidents').insert({
+      reporter_id: reporter.id,
+      category_id: cat.id,
+      title: 'Test Incident for Responder Assignment',
+      description: 'Temporary isolated test incident for verifying assignment and history tracking.',
+      severity: 'medium',
+      barangay: 'Doongan',
+    }).select().single();
+
+    assert.ok(inc, 'Test incident must be created');
+    testIncidentId = inc.id;
+    testIncidentNumber = inc.report_number;
+  });
+
+  after(async () => {
+    if (testIncidentId) {
+      await supabase.from('incident_assignments').delete().eq('incident_id', testIncidentId);
+      await supabase.from('incidents').delete().eq('id', testIncidentId);
+    }
+    if (createdCdrrmoProfileId) {
+      await supabase.from('profiles').delete().eq('id', createdCdrrmoProfileId);
+    }
+    if (createdCeoProfileId) {
+      await supabase.from('profiles').delete().eq('id', createdCeoProfileId);
+    }
+    if (createdReporterId) {
+      await supabase.from('profiles').delete().eq('id', createdReporterId);
+    }
+  });
 
   it('1. Department and Field Responder associations exist in Supabase', async () => {
     const departments = await getActiveDepartments();
@@ -44,16 +127,8 @@ describe('Field Responder Assignment for Every Department', () => {
   });
 
   it('3. Assign and reassign a report, persisting in Supabase and tracking history', async () => {
-    // 1. Get an existing incident or use a test one
-    const { data: incident, error: incError } = await supabase
-      .from('incidents')
-      .select('id, report_number, status')
-      .limit(1)
-      .single();
-
-    assert.ok(!incError && incident, `Failed to fetch test incident: ${incError?.message}`);
-    const incidentId = incident.id;
-    console.log(`Testing with incident: ${incident.report_number} (${incidentId})`);
+    const incidentId = testIncidentId;
+    console.log(`Testing with incident: ${testIncidentNumber} (${incidentId})`);
 
     // 2. Find CDRRMO and its responder
     const departments = await getActiveDepartments();
@@ -154,6 +229,6 @@ describe('Field Responder Assignment for Every Department', () => {
       .order('assigned_at', { ascending: false });
 
     assert.ok(history && history.length >= 2, 'Assignment history should have at least 2 entries');
-    console.log(`Verified assignment history has ${history.length} records for incident ${incident.report_number}`);
+    console.log(`Verified assignment history has ${history.length} records for incident ${testIncidentNumber}`);
   });
 });

@@ -19,6 +19,7 @@ export interface SubmitReportResult {
   error?: string;
   incidentId?: string;
   reportNumber?: string;
+  attachmentError?: string;
 }
 
 export async function submitIncidentAction(
@@ -167,15 +168,6 @@ export async function submitIncidentAction(
       }
     }
 
-    if (uploadErrors.length > 0) {
-      return {
-        success: false,
-        error: `Incident #${incident.report_number} was created, but failed to save attachments: ${uploadErrors.join("; ")}`,
-        incidentId: incident.id,
-        reportNumber: incident.report_number,
-      };
-    }
-
     // 3. Dispatch notifications to resident and staff
     await notifyIncidentSubmitted({
       id: incident.id,
@@ -185,7 +177,7 @@ export async function submitIncidentAction(
       reporter_id: incident.reporter_id,
     });
 
-    // 4. Record audit log for incident submission
+    // 4. Record audit log for incident submission (recording any attachment warnings)
     await createAuditLogEntry({
       actor_id: incident.reporter_id,
       action: "incident_submitted",
@@ -196,6 +188,7 @@ export async function submitIncidentAction(
         title: incident.title,
         barangay: incident.barangay,
         severity: incident.severity,
+        attachment_errors: uploadErrors.length > 0 ? uploadErrors : undefined,
       },
     });
 
@@ -214,6 +207,15 @@ export async function submitIncidentAction(
       revalidatePath("/staff/map");
     } catch {
       // Ignored outside Next.js request context (e.g. testing)
+    }
+
+    if (uploadErrors.length > 0) {
+      return {
+        success: true,
+        incidentId: incident.id,
+        reportNumber: incident.report_number,
+        attachmentError: `Report #${incident.report_number} was created, but failed to save some attachments: ${uploadErrors.join("; ")}`,
+      };
     }
 
     return {

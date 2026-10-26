@@ -41,6 +41,8 @@ function safeRevalidateNotificationPaths() {
     revalidatePath("/dashboard/notifications");
     revalidatePath("/staff");
     revalidatePath("/staff/notifications");
+    revalidatePath("/dispatcher");
+    revalidatePath("/dispatcher/notifications");
     revalidatePath("/admin");
     revalidatePath("/admin/notifications");
   } catch {

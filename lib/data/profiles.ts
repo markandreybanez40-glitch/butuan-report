@@ -55,7 +55,35 @@ export async function getCurrentProfile(): Promise<Profile | null> {
  */
 export async function getOrCreateCurrentProfile(): Promise<Profile | null> {
   const existing = await getCurrentProfile();
-  if (existing) return existing;
+  const configuredAdminClerkId = process.env.INITIAL_ADMIN_CLERK_USER_ID?.trim();
+
+  if (existing) {
+    // If an initial admin Clerk user ID is configured, only elevate if there are currently
+    // ZERO administrators in the database. If active administrators already exist, respect
+    // authorized demotions and administrative decisions.
+    if (
+      configuredAdminClerkId &&
+      existing.clerk_user_id === configuredAdminClerkId &&
+      existing.role !== "admin"
+    ) {
+      const supabase = createAdminSupabaseClient();
+      const { count: adminCount } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "admin");
+
+      if (adminCount === 0) {
+        const { data: elevated } = await supabase
+          .from("profiles")
+          .update({ role: "admin" })
+          .eq("id", existing.id)
+          .select()
+          .single();
+        if (elevated) return elevated;
+      }
+    }
+    return existing;
+  }
 
   let user = null;
   try {
@@ -71,13 +99,23 @@ export async function getOrCreateCurrentProfile(): Promise<Profile | null> {
     user.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
     "Citizen";
 
+  const supabase = createAdminSupabaseClient();
+  let isConfiguredAdmin = false;
+
+  if (configuredAdminClerkId && user.id === configuredAdminClerkId) {
+    const { count: adminCount } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "admin");
+    isConfiguredAdmin = adminCount === 0;
+  }
+
   const newProfile: ProfileInsert = {
     clerk_user_id: user.id,
     full_name: fullName,
-    role: "resident",
+    role: isConfiguredAdmin ? "admin" : "resident",
   };
 
-  const supabase = createAdminSupabaseClient();
   const { data, error } = await supabase
     .from("profiles")
     .insert(newProfile)
@@ -92,7 +130,28 @@ export async function getOrCreateCurrentProfile(): Promise<Profile | null> {
         .select("*")
         .eq("clerk_user_id", user.id)
         .maybeSingle();
-      if (existingProfile) return existingProfile;
+      if (existingProfile) {
+        if (
+          isConfiguredAdmin &&
+          existingProfile.role !== "admin"
+        ) {
+          const { count: adminCount } = await supabase
+            .from("profiles")
+            .select("id", { count: "exact", head: true })
+            .eq("role", "admin");
+
+          if (adminCount === 0) {
+            const { data: elevated } = await supabase
+              .from("profiles")
+              .update({ role: "admin" })
+              .eq("id", existingProfile.id)
+              .select()
+              .single();
+            if (elevated) return elevated;
+          }
+        }
+        return existingProfile;
+      }
     }
     console.error("Error creating initial profile:", error.message);
     return null;

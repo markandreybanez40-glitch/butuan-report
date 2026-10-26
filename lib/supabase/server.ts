@@ -32,7 +32,12 @@ export function createServerSupabaseClient() {
 
   return createClient<Database>(supabaseUrl, supabaseKey, {
     async accessToken() {
-      return (await auth()).getToken();
+      try {
+        const authObj = await auth();
+        return (await authObj?.getToken()) ?? null;
+      } catch {
+        return null;
+      }
     },
   });
 }
