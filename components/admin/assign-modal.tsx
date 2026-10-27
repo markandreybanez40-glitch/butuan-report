@@ -85,8 +85,8 @@ export function AssignModal({
     e.preventDefault();
     if (!incidentId) return;
 
-    if (!selectedDeptId && !selectedFieldResponder && !selectedVehicle) {
-      setErrorMsg("Please select at least a department, field responder, or dispatch vehicle.");
+    if (!selectedDeptId && !selectedFieldResponder) {
+      setErrorMsg("Please select a responsible department or field responder. A dispatch vehicle cannot be assigned alone.");
       return;
     }
 

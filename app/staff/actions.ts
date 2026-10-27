@@ -404,8 +404,11 @@ export async function assignIncidentStaffAction(formData: FormData): Promise<Sta
     dispatchInstruction = rawInstruction as DispatchInstruction;
   }
 
-  if (!departmentId && !responderId && !fieldResponder && !dispatchVehicle) {
-    return { success: false, error: "Please select a department, assigned responder, field responder, or dispatch vehicle." };
+  if (!departmentId && !responderId && !fieldResponder) {
+    return {
+      success: false,
+      error: "Please select a responsible department, assigned responder, or field responder. A dispatch vehicle cannot be assigned alone.",
+    };
   }
 
   const supabase = createAdminSupabaseClient();

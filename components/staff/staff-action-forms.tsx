@@ -267,6 +267,14 @@ export function AssignmentForm({
       Boolean(selectedDept || selectedFieldResponder || selectedVehicle) &&
       (isAssignmentModified || (!currentDepartmentId && !currentFieldResponder && !currentDispatchVehicle && isAssignmentSpecified));
 
+    if (selectedVehicle && !selectedDept && !selectedFieldResponder) {
+      setFeedback({
+        success: false,
+        msg: "Please select a responsible department or field responder when assigning a dispatch vehicle.",
+      });
+      return;
+    }
+
     if (!isStatusChanged && !shouldRunAssignment) {
       setFeedback({ success: false, msg: "Please select a new status, department, responder, or vehicle to save." });
       return;

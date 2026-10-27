@@ -1,5 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { assertSafeTestEnvironment } from './test-safety-guard';
 import {
   DISPATCH_VEHICLES,
   type DispatchVehicle,
@@ -12,6 +13,7 @@ import { getStaffIncidentDetails } from '../lib/data/staff';
 import { getMyIncidentWithDetails } from '../lib/data/incidents';
 
 describe('Butuan Report — Add Dispatch Vehicle Selector Verification', () => {
+  assertSafeTestEnvironment('Add Dispatch Vehicle Selector Verification');
   const supabase = createAdminSupabaseClient();
   let adminClerkUserId: string | null = null;
   let testIncidentId: string;

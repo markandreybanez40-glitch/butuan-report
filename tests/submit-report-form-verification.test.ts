@@ -1,5 +1,6 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { setTestAuthContext } from "@/lib/data/profiles";
 import {
@@ -24,6 +25,7 @@ describe("Butuan Report — Submit Report Form Audit & Verification", () => {
   const createdIncidentIds: string[] = [];
 
   before(async () => {
+    assertSafeTestEnvironment("submit-report-form-verification");
     setTestAuthContext(null);
 
     // Clean up any existing test records

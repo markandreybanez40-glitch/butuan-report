@@ -1,5 +1,6 @@
 import { describe, it, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { assertSafeTestEnvironment } from './test-safety-guard';
 import { createAdminSupabaseClient } from '../lib/supabase/server';
 import { getOrCreateCurrentProfile, setTestAuthContext } from '../lib/data/profiles';
 import { submitIncidentAction } from '../app/dashboard/new/actions';
@@ -8,6 +9,7 @@ const TEST_BOOTSTRAP_USER_ID = 'test_clerk_user_bootstrap_spec';
 const TEST_NORMAL_USER_ID = 'test_clerk_user_normal_resident_spec';
 
 describe('Butuan Report — Initial Admin Bootstrap & Report Submission Resilience', () => {
+  assertSafeTestEnvironment('Initial Admin Bootstrap & Report Submission Resilience');
   const supabase = createAdminSupabaseClient();
   const createdProfileIds: string[] = [];
   const createdIncidentIds: string[] = [];

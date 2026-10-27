@@ -1,5 +1,6 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { setTestAuthContext, getCurrentProfile } from "@/lib/data/profiles";
 import {
@@ -23,6 +24,7 @@ const TEST_DISPATCHER_CLERK_ID = "test_reg_dispatcher_clerk_id";
 const TEST_ADMIN_CLERK_ID = "test_reg_admin_clerk_id";
 
 describe("Butuan Report — Notifications & Portals Regression Suite", () => {
+  assertSafeTestEnvironment("Notifications & Portals Regression Suite");
   const supabase = createAdminSupabaseClient();
   let residentProfile: Profile;
   let responderProfile: Profile;

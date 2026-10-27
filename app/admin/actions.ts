@@ -868,8 +868,11 @@ export async function adminAssignIncidentAction(params: {
     return { success: false, error: "Incident ID is required." };
   }
 
-  if (!departmentId && !fieldResponder && !responderId && !rawVehicle) {
-    return { success: false, error: "Please select a responsible department, field responder, or dispatch vehicle." };
+  if (!departmentId && !fieldResponder && !responderId) {
+    return {
+      success: false,
+      error: "Please select a responsible department or field responder. A dispatch vehicle cannot be assigned alone without an assigned department or responder.",
+    };
   }
 
   // Validate Field Responder: must be exactly one of FIELD_RESPONDERS (Responder 1–5) if provided

@@ -1,5 +1,6 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { setTestAuthContext, getCurrentProfile } from "@/lib/data/profiles";
 import { updateUserRoleAction } from "@/app/admin/actions";
@@ -22,6 +23,7 @@ const TEST_RESPONDER_ID = "test_auth_verify_responder";
 const TEST_DISPATCHER_ID = "test_auth_verify_dispatcher";
 
 describe("Butuan Report — Login and Role-Based Redirect Verification", () => {
+  assertSafeTestEnvironment("Login and Role-Based Redirect Verification");
   const supabase = createAdminSupabaseClient();
   let residentProfile: Profile;
 

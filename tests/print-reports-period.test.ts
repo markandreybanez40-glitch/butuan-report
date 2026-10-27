@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { getAdminAnalyticsData, getAdminCategories } from "@/lib/data/admin";
 import { resolveReportPeriod } from "@/lib/utils/report-period";
@@ -13,6 +14,7 @@ import type { Profile, IncidentCategory } from "@/types";
 const TEST_ADMIN_CLERK_ID = "test_admin_print_reports_clerk_id";
 
 describe("Admin Reports & Analytics — Print Daily, Monthly, and Yearly Reports", () => {
+  assertSafeTestEnvironment("Admin Reports & Analytics — Print Daily, Monthly, and Yearly Reports");
   const supabase = createAdminSupabaseClient();
   let testAdmin: Profile;
   let activeCategory: IncidentCategory;

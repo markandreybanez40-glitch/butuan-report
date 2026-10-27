@@ -9,6 +9,10 @@ import { createAuditLogEntry } from "@/lib/data/audit";
 import {
   uploadIncidentAttachment,
   validateFileBuffer,
+  prepareAttachmentUploads,
+  finalizeAttachmentUploads,
+  type PreparedUploadAttachment,
+  type FinalizeAttachmentItem,
   MAX_FILES_PER_REPORT,
   MAX_FILE_SIZE_BYTES,
   ALLOWED_MIME_TYPES,
@@ -226,5 +230,113 @@ export async function submitIncidentAction(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "An unexpected error occurred while saving the report.";
     return { success: false, error: message };
+  }
+}
+
+export interface PrepareAttachmentUploadsResult {
+  success: boolean;
+  error?: string;
+  items?: PreparedUploadAttachment[];
+}
+
+/**
+ * Server action to request short-lived upload authorizations for direct-to-storage upload.
+ * Generates signed upload URLs without passing file data through Vercel serverless request body.
+ */
+export async function prepareAttachmentUploadsAction(params: {
+  incidentId: string;
+  files: { filename: string; fileSize: number; mimeType: string }[];
+}): Promise<PrepareAttachmentUploadsResult> {
+  let user = null;
+  try {
+    user = await currentUser();
+  } catch {
+    user = null;
+  }
+  if (!user && process.env.NODE_ENV === "production") {
+    return { success: false, error: "Unauthorized: Please sign in." };
+  }
+
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return { success: false, error: "Unauthorized: Profile not found." };
+  }
+
+  try {
+    const items = await prepareAttachmentUploads(params.incidentId, params.files);
+    return { success: true, items };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to prepare file uploads.";
+    return { success: false, error: message };
+  }
+}
+
+export interface FinalizeIncidentAttachmentsResult {
+  success: boolean;
+  error?: string;
+  savedCount: number;
+  errors: string[];
+}
+
+/**
+ * Server action to finalize direct-to-storage uploads.
+ * Verifies storage headers, inspects binary signatures, creates DB records,
+ * and purges invalid or malicious files from storage.
+ */
+export async function finalizeIncidentAttachmentsAction(params: {
+  incidentId: string;
+  uploadedAttachments: FinalizeAttachmentItem[];
+}): Promise<FinalizeIncidentAttachmentsResult> {
+  let user = null;
+  try {
+    user = await currentUser();
+  } catch {
+    user = null;
+  }
+  if (!user && process.env.NODE_ENV === "production") {
+    return { success: false, error: "Unauthorized: Please sign in.", savedCount: 0, errors: [] };
+  }
+
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return { success: false, error: "Unauthorized: Profile not found.", savedCount: 0, errors: [] };
+  }
+
+  try {
+    const { savedAttachments, errors } = await finalizeAttachmentUploads(
+      params.incidentId,
+      params.uploadedAttachments
+    );
+
+    // Record audit log if there were attachment issues
+    if (errors.length > 0) {
+      await createAuditLogEntry({
+        actor_id: profile.id,
+        action: "incident_updated",
+        entity_type: "incident",
+        entity_id: params.incidentId,
+        metadata: {
+          note: "Direct attachment upload warnings recorded",
+          errors,
+        },
+      });
+    }
+
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath("/dashboard/reports");
+      revalidatePath("/dashboard/my-reports");
+    } catch {
+      // Ignored outside Next request context
+    }
+
+    return {
+      success: true,
+      savedCount: savedAttachments.length,
+      errors,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to finalize attachments.";
+    return { success: false, error: message, savedCount: 0, errors: [message] };
   }
 }

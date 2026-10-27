@@ -231,6 +231,237 @@ export async function uploadIncidentAttachment(
   return attachment;
 }
 
+export interface PreparedUploadAttachment {
+  path: string;
+  signedUrl: string;
+  token: string;
+  originalFilename: string;
+  mimeType: string;
+  fileSize: number;
+}
+
+export interface FinalizeAttachmentItem {
+  path: string;
+  originalFilename: string;
+  fileSize: number;
+  mimeType: string;
+}
+
+export interface FinalizeAttachmentsResult {
+  savedAttachments: IncidentAttachment[];
+  errors: string[];
+}
+
+/**
+ * Prepares short-lived signed upload authorizations for direct-to-storage uploads.
+ * Enforces authenticated user, incident ownership, allowed MIME types, and file size limits.
+ * Storage path is strictly generated server-side.
+ */
+export async function prepareAttachmentUploads(
+  incidentId: string,
+  files: { filename: string; fileSize: number; mimeType: string }[]
+): Promise<PreparedUploadAttachment[]> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    throw new Error("Unauthorized: Sign-in required to upload attachments.");
+  }
+
+  if (!files || files.length === 0) {
+    return [];
+  }
+
+  if (files.length > MAX_FILES_PER_REPORT) {
+    throw new Error(`Maximum attachment limit (${MAX_FILES_PER_REPORT} files) exceeded.`);
+  }
+
+  const supabase = createAdminSupabaseClient();
+
+  // 1. Authorize caller against target incident
+  const { data: incident, error: incError } = await supabase
+    .from("incidents")
+    .select("id, reporter_id, status")
+    .eq("id", incidentId)
+    .single();
+
+  if (incError || !incident) {
+    throw new Error("Target incident report not found or inaccessible.");
+  }
+
+  if (profile.role === "resident") {
+    if (incident.reporter_id !== profile.id) {
+      throw new Error("Security Policy: Residents may only upload attachments to their own reports.");
+    }
+    if (!["submitted", "under_review", "assigned", "in_progress"].includes(incident.status)) {
+      throw new Error("Security Policy: Cannot add attachments to resolved or closed reports.");
+    }
+  } else if (profile.role === "responder") {
+    const { data: assignment } = await supabase
+      .from("incident_assignments")
+      .select("id")
+      .eq("incident_id", incidentId)
+      .eq("assigned_user_id", profile.id)
+      .is("unassigned_at", null)
+      .maybeSingle();
+
+    if (!assignment) {
+      throw new Error("Security Policy: Responders may only attach evidence to incidents assigned to them.");
+    }
+  }
+
+  // 2. Check current attachment count limit
+  const { count: currentCount } = await supabase
+    .from("incident_attachments")
+    .select("*", { count: "exact", head: true })
+    .eq("incident_id", incidentId);
+
+  if ((currentCount || 0) + files.length > MAX_FILES_PER_REPORT) {
+    throw new Error(
+      `Cannot upload ${files.length} file(s). Maximum attachment limit (${MAX_FILES_PER_REPORT} files) would be exceeded.`
+    );
+  }
+
+  const prepared: PreparedUploadAttachment[] = [];
+
+  for (const f of files) {
+    if (f.fileSize > MAX_FILE_SIZE_BYTES) {
+      const mb = (f.fileSize / (1024 * 1024)).toFixed(1);
+      throw new Error(`File "${f.filename}" exceeds the 10 MB limit (${mb} MB).`);
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(f.mimeType)) {
+      throw new Error(
+        `File "${f.filename}" has an unsupported format (${f.mimeType || "unknown"}). Allowed formats: JPG, PNG, WebP, HEIC, GIF, PDF.`
+      );
+    }
+
+    const cleanName = f.filename
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .replace(/^\.+/, "")
+      .slice(0, 100);
+
+    const uniqueToken = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const storagePath = `incidents/${incidentId}/${uniqueToken}-${cleanName}`;
+
+    const { data, error } = await supabase.storage
+      .from("incident-attachments")
+      .createSignedUploadUrl(storagePath, { upsert: false });
+
+    if (error || !data) {
+      throw new Error(`Failed to create upload authorization: ${error?.message || "Storage error"}`);
+    }
+
+    prepared.push({
+      path: storagePath,
+      signedUrl: data.signedUrl,
+      token: data.token,
+      originalFilename: cleanName,
+      mimeType: f.mimeType,
+      fileSize: f.fileSize,
+    });
+  }
+
+  return prepared;
+}
+
+/**
+ * Validates and finalizes attachments uploaded directly to storage.
+ * Inspects binary magic bytes from storage headers and inserts database records.
+ * Purges invalid or malicious files from storage immediately.
+ */
+export async function finalizeAttachmentUploads(
+  incidentId: string,
+  uploadedAttachments: FinalizeAttachmentItem[]
+): Promise<FinalizeAttachmentsResult> {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    throw new Error("Unauthorized: Sign-in required to finalize attachments.");
+  }
+
+  if (!uploadedAttachments || uploadedAttachments.length === 0) {
+    return { savedAttachments: [], errors: [] };
+  }
+
+  const supabase = createAdminSupabaseClient();
+
+  // Authorize caller against target incident
+  const { data: incident, error: incError } = await supabase
+    .from("incidents")
+    .select("id, reporter_id, status")
+    .eq("id", incidentId)
+    .single();
+
+  if (incError || !incident) {
+    throw new Error("Target incident report not found or inaccessible.");
+  }
+
+  if (profile.role === "resident" && incident.reporter_id !== profile.id) {
+    throw new Error("Security Policy: Residents may only manage attachments on their own reports.");
+  }
+
+  const savedAttachments: IncidentAttachment[] = [];
+  const errors: string[] = [];
+
+  for (const item of uploadedAttachments) {
+    // 1. Strict path validation: Must begin with incidents/<incidentId>/ and have no path traversal
+    const expectedPrefix = `incidents/${incidentId}/`;
+    if (!item.path.startsWith(expectedPrefix) || item.path.includes("..") || item.path.includes("//")) {
+      errors.push(`Unauthorized storage path rejected: "${item.path}".`);
+      continue;
+    }
+
+    // 2. Download header bytes to verify existence and check magic bytes
+    try {
+      const { data: blob, error: downloadError } = await supabase.storage
+        .from("incident-attachments")
+        .download(item.path);
+
+      if (downloadError || !blob) {
+        errors.push(`Could not find uploaded file in storage: "${item.originalFilename}".`);
+        continue;
+      }
+
+      const arrayBuffer = await blob.arrayBuffer();
+      const headerBuffer = Buffer.from(arrayBuffer.slice(0, 512));
+      const validation = validateFileBuffer(headerBuffer, item.mimeType, item.originalFilename);
+
+      if (!validation.valid) {
+        // Purge invalid / spoofed file immediately
+        await supabase.storage.from("incident-attachments").remove([item.path]);
+        errors.push(validation.error || `File signature validation failed for "${item.originalFilename}".`);
+        continue;
+      }
+
+      // 3. Insert record into incident_attachments
+      const { data: record, error: insertError } = await supabase
+        .from("incident_attachments")
+        .insert({
+          incident_id: incidentId,
+          uploader_id: profile.id,
+          storage_path: item.path,
+          original_filename: item.originalFilename,
+          mime_type: validation.detectedMime,
+          file_size: item.fileSize,
+        })
+        .select()
+        .single();
+
+      if (insertError || !record) {
+        await supabase.storage.from("incident-attachments").remove([item.path]);
+        errors.push(`Failed to register attachment "${item.originalFilename}": ${insertError?.message || "DB error"}`);
+        continue;
+      }
+
+      savedAttachments.push(record);
+    } catch (err) {
+      await supabase.storage.from("incident-attachments").remove([item.path]).catch(() => {});
+      const msg = err instanceof Error ? err.message : `Unexpected error validating "${item.originalFilename}".`;
+      errors.push(msg);
+    }
+  }
+
+  return { savedAttachments, errors };
+}
+
 /**
  * Deletes an incident attachment with full authorization and audit logging.
  */

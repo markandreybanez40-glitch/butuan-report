@@ -1,9 +1,11 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { getAdminAnalyticsData, getAdminCategories } from "@/lib/data/admin";
 
 describe("Admin Analytics — Category Filtering & Time Series Rendering", () => {
+  assertSafeTestEnvironment("Admin Analytics — Category Filtering & Time Series Rendering");
   const supabase = createAdminSupabaseClient();
 
   test("1. All Categories filter returns total incident volume with continuous time points", async () => {

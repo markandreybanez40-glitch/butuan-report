@@ -34,7 +34,13 @@ const LocationPickerMap = dynamic(
     ),
   }
 );
-import { submitIncidentAction, type SubmitReportResult } from "@/app/dashboard/new/actions";
+import {
+  submitIncidentAction,
+  prepareAttachmentUploadsAction,
+  finalizeIncidentAttachmentsAction,
+  type SubmitReportResult,
+} from "@/app/dashboard/new/actions";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -255,7 +261,7 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
       return;
     }
 
-    // Build FormData
+    // Build FormData for report metadata (excluding large binary files)
     const formData = new FormData();
     formData.append("category_id", categoryId);
     formData.append("severity", severity);
@@ -267,21 +273,103 @@ export function NewReportForm({ categories, defaultBarangay = "" }: NewReportFor
     if (latitude.trim()) formData.append("latitude", latitude.trim());
     if (longitude.trim()) formData.append("longitude", longitude.trim());
 
-    // Append attachments
-    for (const file of attachments) {
-      formData.append("attachments", file);
-    }
-
     startTransition(async () => {
       try {
+        // Step 1: Create incident via lightweight server action (no files in payload)
         const result = await submitIncidentAction(null, formData);
-        if (result.success) {
-          // Clear object URLs
-          Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
-          setSubmitResult(result);
-        } else {
+        if (!result.success || !result.incidentId) {
           setErrorMsg(result.error || "An error occurred while submitting your report.");
+          return;
         }
+
+        const incidentId = result.incidentId;
+        let attachmentErrorMsg: string | undefined = undefined;
+
+        // Step 2: Direct-to-storage authenticated upload if attachments are present
+        if (attachments.length > 0) {
+          const prepRes = await prepareAttachmentUploadsAction({
+            incidentId,
+            files: attachments.map((f) => ({
+              filename: f.name,
+              fileSize: f.size,
+              mimeType: f.type,
+            })),
+          });
+
+          if (!prepRes.success || !prepRes.items) {
+            attachmentErrorMsg = prepRes.error || "Failed to authorize file uploads.";
+          } else {
+            const supabase = createBrowserSupabaseClient();
+            const uploadedItems: {
+              path: string;
+              originalFilename: string;
+              fileSize: number;
+              mimeType: string;
+            }[] = [];
+            const clientErrors: string[] = [];
+
+            for (let i = 0; i < prepRes.items.length; i++) {
+              const item = prepRes.items[i];
+              const file = attachments[i];
+              if (!file) continue;
+
+              try {
+                // Upload directly to Supabase Storage via signed upload token
+                const { error: uploadErr } = await supabase.storage
+                  .from("incident-attachments")
+                  .uploadToSignedUrl(item.path, item.token, file, {
+                    contentType: file.type,
+                    upsert: false,
+                  });
+
+                if (uploadErr) {
+                  // Fallback: direct PUT request to signed URL
+                  const putRes = await fetch(item.signedUrl, {
+                    method: "PUT",
+                    body: file,
+                    headers: { "Content-Type": file.type },
+                  });
+
+                  if (!putRes.ok) {
+                    throw new Error(`Upload failed with status ${putRes.status}`);
+                  }
+                }
+
+                uploadedItems.push({
+                  path: item.path,
+                  originalFilename: item.originalFilename,
+                  fileSize: item.fileSize,
+                  mimeType: item.mimeType,
+                });
+              } catch (uploadErr) {
+                const msg = uploadErr instanceof Error ? uploadErr.message : `Failed to upload "${file.name}".`;
+                clientErrors.push(msg);
+              }
+            }
+
+            // Step 3: Finalize uploaded attachments (verify magic bytes & register metadata)
+            if (uploadedItems.length > 0) {
+              const finalizeRes = await finalizeIncidentAttachmentsAction({
+                incidentId,
+                uploadedAttachments: uploadedItems,
+              });
+
+              const allErrors = [...clientErrors, ...finalizeRes.errors];
+              if (allErrors.length > 0) {
+                attachmentErrorMsg = `Report #${result.reportNumber} was created, but some attachments failed: ${allErrors.join("; ")}`;
+              }
+            } else if (clientErrors.length > 0) {
+              attachmentErrorMsg = `Report #${result.reportNumber} was created, but failed to upload attachments: ${clientErrors.join("; ")}`;
+            }
+          }
+        }
+
+        // Clear object URLs
+        Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
+        setSubmitResult({
+          ...result,
+          attachmentError: attachmentErrorMsg,
+        });
       } catch (err) {
         setErrorMsg(err instanceof Error ? err.message : "Failed to connect to the server.");
       }

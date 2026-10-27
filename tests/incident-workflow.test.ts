@@ -1,5 +1,6 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { setTestAuthContext } from "@/lib/data/profiles";
 import {
@@ -34,6 +35,7 @@ const TEST_ADMIN_CLERK_ID = "test_admin_gamma_clerk_id";
 const TEST_RESPONDER_CLERK_ID = "test_responder_delta_clerk_id";
 
 describe("Butuan Report — End-to-End Incident Workflow, Security & Notifications", () => {
+  assertSafeTestEnvironment("End-to-End Incident Workflow, Security & Notifications");
   const supabase = createAdminSupabaseClient();
   let resident1Profile: Profile;
   let resident2Profile: Profile;

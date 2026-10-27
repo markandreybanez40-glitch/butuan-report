@@ -8,6 +8,8 @@ describe("Supabase Server Client & Key Security Verification", () => {
   const originalPubKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   test("1. createAdminSupabaseClient strictly requires SUPABASE_SECRET_KEY and does not fall back to publishable key", () => {
+    // Ensure NEXT_PUBLIC_SUPABASE_URL is set so we strictly test SUPABASE_SECRET_KEY validation
+    process.env.NEXT_PUBLIC_SUPABASE_URL = originalPubUrl || "https://mock.supabase.co";
     // Temporarily unset SUPABASE_SECRET_KEY while keeping publishable key present
     delete process.env.SUPABASE_SECRET_KEY;
 
@@ -57,14 +59,16 @@ describe("Supabase Server Client & Key Security Verification", () => {
   });
 
   test("4. createAdminSupabaseClient successfully initializes with valid SUPABASE_SECRET_KEY", () => {
-    assert.ok(process.env.SUPABASE_SECRET_KEY, "SUPABASE_SECRET_KEY must be configured in environment");
+    process.env.NEXT_PUBLIC_SUPABASE_URL = originalPubUrl || "https://mock.supabase.co";
+    process.env.SUPABASE_SECRET_KEY = originalSecretKey || "sb_secret_key_mock";
     const client = createAdminSupabaseClient();
     assert.ok(client, "Admin Supabase client should be instantiated");
     assert.equal(typeof client.from, "function", "Client must expose standard query builder");
   });
 
   test("5. createServerSupabaseClient successfully initializes with publishable key and Clerk session handler", () => {
-    assert.ok(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, "Publishable key must be configured in environment");
+    process.env.NEXT_PUBLIC_SUPABASE_URL = originalPubUrl || "https://mock.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = originalPubKey || "sb_pub_key_mock";
     const client = createServerSupabaseClient();
     assert.ok(client, "Server Supabase client should be instantiated");
     assert.equal(typeof client.from, "function", "Client must expose standard query builder");

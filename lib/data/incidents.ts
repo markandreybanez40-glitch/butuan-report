@@ -80,7 +80,7 @@ export async function getResidentIncidentStats(): Promise<ResidentIncidentStats>
       .from("incidents")
       .select("*", { count: "exact", head: true })
       .eq("reporter_id", profile.id)
-      .in("status", ["resolved", "closed"]),
+      .or("status.eq.resolved,and(status.eq.closed,resolved_at.not.is.null)"),
   ]);
 
   if (err1 || err2 || err3 || err4) {
@@ -143,7 +143,11 @@ export async function getMyPaginatedIncidents(options?: {
     .order("created_at", { ascending: false });
 
   if (options?.status && options.status !== "all") {
-    query = query.eq("status", options.status);
+    if (options.status.toLowerCase() === "resolved") {
+      query = query.or("status.eq.resolved,and(status.eq.closed,resolved_at.not.is.null)");
+    } else {
+      query = query.eq("status", options.status);
+    }
   }
 
   if (options?.search && options.search.trim()) {

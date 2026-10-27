@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "npx tsx --env-file=.env.local --test --test-concurrency=1 tests/*.test.ts",
+    "test": "npx tsx --test --test-concurrency=1 tests/unit/*.test.ts tests/supabase-server-keys.test.ts",
+    "test:safe": "npx tsx --test --test-concurrency=1 tests/unit/*.test.ts tests/supabase-server-keys.test.ts",
+    "test:db": "npx tsx --env-file=.env.test --test --test-concurrency=1 tests/*.test.ts",
     "bootstrap:admin": "npx tsx --env-file=.env.local scripts/bootstrap-admin.ts"
   },
   "dependencies": {

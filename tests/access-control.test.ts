@@ -1,5 +1,6 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { setTestAuthContext, getCurrentProfile } from "@/lib/data/profiles";
 import {
@@ -25,6 +26,7 @@ const TEST_RESIDENT_CLERK_ID = "test_sec_resident_clerk_id";
 const TEST_ADMIN_CLERK_ID = "test_sec_admin_clerk_id";
 
 describe("Butuan Report — Access Control, Boundaries & Coordinate Persistence", () => {
+  assertSafeTestEnvironment("Access Control, Boundaries & Coordinate Persistence");
   const supabase = createAdminSupabaseClient();
   let residentProfile: Profile;
   let adminProfile: Profile;

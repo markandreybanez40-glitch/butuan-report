@@ -143,7 +143,7 @@ export async function getStaffIncidentStats(profile: Profile): Promise<StaffInci
     supabase.from("incidents").select("*", { count: "exact", head: true }).eq("status", "under_review"),
     supabase.from("incidents").select("*", { count: "exact", head: true }).eq("status", "assigned"),
     supabase.from("incidents").select("*", { count: "exact", head: true }).eq("status", "in_progress"),
-    supabase.from("incidents").select("*", { count: "exact", head: true }).or("status.eq.resolved,resolved_at.not.is.null"),
+    supabase.from("incidents").select("*", { count: "exact", head: true }).or("status.eq.resolved,and(status.eq.closed,resolved_at.not.is.null)"),
     supabase.from("incidents").select("*", { count: "exact", head: true }).eq("status", "closed"),
     supabase.from("incidents").select("*", { count: "exact", head: true }).eq("severity", "critical").not("status", "in", '("resolved","closed","cancelled")'),
   ]);
@@ -243,7 +243,11 @@ export async function getStaffIncidentPaginatedQueue(
   }
 
   if (options?.status && options.status !== "all") {
-    query = query.eq("status", options.status);
+    if (options.status.toLowerCase() === "resolved") {
+      query = query.or("status.eq.resolved,and(status.eq.closed,resolved_at.not.is.null)");
+    } else {
+      query = query.eq("status", options.status);
+    }
   }
 
   if (options?.severity && options.severity !== "all") {

@@ -67,7 +67,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     supabase.from("incidents").select("*", { count: "exact", head: true }).eq("status", "submitted"),
     supabase.from("incidents").select("*", { count: "exact", head: true }).eq("status", "under_review"),
     supabase.from("incidents").select("*", { count: "exact", head: true }).in("status", ["assigned", "in_progress"]),
-    supabase.from("incidents").select("*", { count: "exact", head: true }).in("status", ["resolved", "closed"]),
+    supabase.from("incidents").select("*", { count: "exact", head: true }).or("status.eq.resolved,and(status.eq.closed,resolved_at.not.is.null)"),
     supabase.from("incidents").select("*", { count: "exact", head: true }).in("status", ["rejected", "cancelled", "duplicate"]),
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase
@@ -639,7 +639,11 @@ export async function getAdminAssignmentsPaginatedQueue(options?: {
   }
 
   if (options?.status && options.status !== "all") {
-    query = query.eq("status", options.status);
+    if (options.status.toLowerCase() === "resolved") {
+      query = query.or("status.eq.resolved,and(status.eq.closed,resolved_at.not.is.null)");
+    } else {
+      query = query.eq("status", options.status);
+    }
   }
 
   if (options?.search && options.search.trim()) {

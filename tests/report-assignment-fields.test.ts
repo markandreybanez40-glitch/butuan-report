@@ -1,5 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { assertSafeTestEnvironment } from './test-safety-guard';
 import { FIELD_RESPONDERS, DISPATCH_INSTRUCTIONS, type FieldResponder, type DispatchInstruction } from '../types';
 import { createAdminSupabaseClient } from '../lib/supabase/server';
 import { setTestAuthContext } from '../lib/data/profiles';
@@ -9,6 +10,7 @@ import { getStaffIncidentDetails } from '../lib/data/staff';
 import { getAdminAssignmentsPaginatedQueue } from '../lib/data/admin';
 
 describe('Butuan Report — Update Admin Report Assignment Fields Verification', () => {
+  assertSafeTestEnvironment('Update Admin Report Assignment Fields Verification');
   const supabase = createAdminSupabaseClient();
   let adminClerkUserId: string | null = null;
   let testIncidentId: string;

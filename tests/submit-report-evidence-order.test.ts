@@ -2,6 +2,7 @@ import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { assertSafeTestEnvironment } from "./test-safety-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { setTestAuthContext } from "@/lib/data/profiles";
 import {
@@ -19,6 +20,7 @@ import type { Profile, IncidentCategory } from "@/types";
 const TEST_SUBMITTER_CLERK_ID = "test_resident_evidence_order_clerk_id";
 
 describe("Butuan Report — Submit Report Page: Photo & Document Evidence Ordering & Functionality", () => {
+  assertSafeTestEnvironment("Submit Report Page: Photo & Document Evidence Ordering & Functionality");
   const supabase = createAdminSupabaseClient();
   let testProfile: Profile;
   let activeCategory: IncidentCategory;

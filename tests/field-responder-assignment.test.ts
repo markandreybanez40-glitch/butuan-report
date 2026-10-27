@@ -1,5 +1,6 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { assertSafeTestEnvironment } from './test-safety-guard';
 import { createAdminSupabaseClient } from '../lib/supabase/server';
 import { getActiveDepartments } from '../lib/data/departments';
 import { getAssignableStaff, getFieldRespondersByDepartment } from '../lib/data/staff';
@@ -9,6 +10,7 @@ const TEST_CEO_CLERK_ID = 'test_resp_ceo_field_assign';
 const TEST_REPORTER_CLERK_ID = 'test_reporter_field_assign';
 
 describe('Field Responder Assignment for Every Department', () => {
+  assertSafeTestEnvironment('Field Responder Assignment for Every Department');
   const supabase = createAdminSupabaseClient();
   let testIncidentId: string;
   let testIncidentNumber: string;
