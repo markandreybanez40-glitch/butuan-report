@@ -40,6 +40,7 @@ import {
   updateDepartmentAction,
   toggleDepartmentStatusAction,
 } from "@/app/admin/actions";
+import { cn } from "@/lib/utils";
 import type { Department } from "@/types";
 
 interface DepartmentsManagerProps {
@@ -298,22 +299,31 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
               </TableRow>
             ) : (
               filteredDepartments.map((d) => {
-                const dateStr = new Date(d.created_at).toLocaleDateString("en-PH", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                });
+                const dateStr = d.created_at
+                  ? new Date(d.created_at).toLocaleDateString("en-PH", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })
+                  : "—";
+
+                const iconStyles = d.is_active
+                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                  : "bg-muted text-muted-foreground border-border";
+
+                const toggleButtonStyles = d.is_active
+                  ? "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                  : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10";
 
                 return (
                   <TableRow key={d.id} className="hover:bg-muted/30">
                     <TableCell className="py-3">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className={`size-8 rounded-lg flex items-center justify-center shrink-0 border ${
-                            d.is_active
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
-                              : "bg-muted text-muted-foreground border-border"
-                          }`}
+                          className={cn(
+                            "size-8 rounded-lg flex items-center justify-center shrink-0 border",
+                            iconStyles
+                          )}
                         >
                           <Building2 className="size-4" />
                         </div>
@@ -322,7 +332,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
                             {d.name}
                           </p>
                           <p className="text-[10px] font-mono text-muted-foreground">
-                            ID: {d.id.slice(0, 8)}...
+                            ID: {d.id ? `${d.id.slice(0, 8)}...` : "—"}
                           </p>
                         </div>
                       </div>
@@ -344,7 +354,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
                       )}
                     </TableCell>
 
-                    <TableCell className="text-xs text-muted-foreground font-mono py-3">
+                    <TableCell className="text-xs text-muted-foreground font-mono py-3" suppressHydrationWarning>
                       {dateStr}
                     </TableCell>
 
@@ -365,11 +375,7 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
                         size="xs"
                         onClick={() => setConfirmToggleDept(d)}
                         disabled={isPending}
-                        className={`h-7 px-2 text-xs gap-1 ${
-                          d.is_active
-                            ? "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
-                            : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10"
-                        }`}
+                        className={cn("h-7 px-2 text-xs gap-1", toggleButtonStyles)}
                       >
                         {d.is_active ? (
                           <>
@@ -557,6 +563,13 @@ export function DepartmentsManager({ departments }: DepartmentsManagerProps) {
               <strong className="text-foreground">{confirmToggleDept?.name}</strong>?
             </DialogDescription>
           </DialogHeader>
+
+          {feedbackError && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+              <AlertTriangle className="size-4 shrink-0" />
+              <span>{feedbackError}</span>
+            </div>
+          )}
 
           <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-xs text-muted-foreground">
             {confirmToggleDept?.is_active ? (
